@@ -1,6 +1,8 @@
 # LLaMA 3.2 vs Small Model Comparison
 
+
 **Evaluating the accuracy-latency Pareto frontier for lightweight language models on consumer hardware**
+### Team 9: Pedro Poveda |	Joel Gonzalez |	Jose Gabriel Gonzalez Nunez |	Matthew Horvath
 
 ## 🎯 Project Overview
 
