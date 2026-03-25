@@ -40,7 +40,7 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 ## 🚀 Quick Start
 
 ### Option A: Google Colab (Recommended)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/llama-3.2-comparison/blob/main/notebooks/colab_setup.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models/blob/main/notebooks/colab_setup.ipynb)
 
 1. Open the Colab setup notebook
 2. Run all cells to clone repo and install dependencies  
@@ -48,8 +48,8 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 
 ### Option B: Local Setup
 ```bash
-git clone https://github.com/yourusername/llama-3.2-comparison.git
-cd llama-3.2-comparison
+git clone https://github.com/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models.git
+cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
 python scripts/setup.py
 pip install -r requirements.txt
 python scripts/download_models.py
@@ -96,17 +96,39 @@ We anticipate finding clear trade-offs in the accuracy-latency space:
 - [Phi-3 Technical Report](https://arxiv.org/abs/2404.14219)
 - [Efficient Model Deployment Best Practices](https://huggingface.co/docs/transformers/main/en/perf_infer_gpu_one)
 
+## 👥 Team Responsibilities
+
+| Member | Role | Focus Area |
+|--------|------|------------|
+| **Pedro Poveda** | Benchmark Framework | Unified evaluation runner for all 4 benchmarks (MMLU, GSM8K, HellaSwag, ARC-Challenge) |
+| **Joel Gonzalez** | Quantization Pipeline | FP16/INT8/INT4 model loading, latency & memory profiling |
+| **Jose Gabriel Gonzalez Nunez** | Experiment Execution & Data | Run full experiment matrix, collect & validate all results |
+| **Matthew Horvath** | Analysis & Deliverables | Visualizations, Pareto frontier, Colab integration, report & presentation |
+
+## 📅 Milestones (Target: April 13)
+
+| Milestone | Deadline | Deliverables |
+|-----------|----------|--------------|
+| **M1** — Environment & Setup | Mar 28 | GPU access confirmed, all models load, result JSON schema agreed |
+| **M2** — Benchmark Runner + Quantization | Apr 2 | Unified eval script (4 benchmarks), quantization wrapper (FP16/INT8/INT4), smoke test on TinyLlama |
+| **M3** — Full Experiment Matrix | Apr 6 | 60 experiments (5 models × 3 quant × 4 benchmarks), latency/memory data, raw results committed |
+| **M4** — Analysis & Visualization | Apr 9 | Pareto frontier plot, comparison tables, charts, statistical significance tests |
+| **M5** — Presentation & Report | Apr 13 | Slides finalized, NeurIPS report draft, Colab demo ready |
+
 ## 📋 Progress
 
 - [x] Repository setup and documentation
 - [x] Model download automation
 - [x] Colab integration
-- [ ] Benchmark implementation
-- [ ] Quantization pipeline
+- [ ] Unified benchmark runner (MMLU, GSM8K, HellaSwag, ARC-Challenge)
+- [ ] Quantization pipeline (FP16 / INT8 / INT4 via bitsandbytes)
+- [ ] Latency & memory profiling
+- [ ] Full experiment matrix (60 runs)
 - [ ] Results analysis and visualization
 - [ ] Pareto frontier analysis
+- [ ] Final presentation and NeurIPS report
 
 ---
 
-**Course**: CAP6614 - Efficient Machine Learning  
-**Focus**: On-device deployment and edge computing optimization# LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
+**Course**: CAP6614 - Efficient Machine Learning
+**Focus**: On-device deployment and edge computing optimization
