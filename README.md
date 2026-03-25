@@ -40,7 +40,7 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 ## 🚀 Quick Start
 
 ### Option A: Google Colab (Recommended)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/llama-3.2-comparison/blob/main/notebooks/colab_setup.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models/blob/main/notebooks/colab_setup.ipynb)
 
 1. Open the Colab setup notebook
 2. Run all cells to clone repo and install dependencies  
@@ -48,8 +48,8 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 
 ### Option B: Local Setup
 ```bash
-git clone https://github.com/yourusername/llama-3.2-comparison.git
-cd llama-3.2-comparison
+git clone https://github.com/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models.git
+cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
 python scripts/setup.py
 pip install -r requirements.txt
 python scripts/download_models.py
