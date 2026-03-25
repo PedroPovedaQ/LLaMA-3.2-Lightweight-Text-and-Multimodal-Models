@@ -25,11 +25,38 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 
 ## 🧪 Evaluation Framework
 
-### Performance Benchmarks
-- **MMLU** - Multitask language understanding
-- **GSM8K** - Mathematical reasoning
-- **HellaSwag** - Commonsense reasoning
-- **ARC-Challenge** - Reading comprehension
+### Text Benchmarks
+
+| Category | Benchmark | Setup | Metric |
+|----------|-----------|-------|--------|
+| General | **MMLU** | 5-shot | Accuracy |
+| General | **Open-rewrite eval** | 0-shot, rougeL | rougeL |
+| General | **TLDR9+** | 1-shot, rougeL | rougeL |
+| General | **IFEval** | — | Accuracy |
+| Tool Use | **BFCL V2** | — | Accuracy |
+| Tool Use | **Nexus** | — | Accuracy |
+| Math | **GSM8K** | 8-shot, CoT | Exact match |
+| Math | **MATH** | 0-shot, CoT | Exact match |
+| Reasoning | **ARC-Challenge** | 0-shot | Accuracy |
+| Reasoning | **GPQA** | 0-shot | Accuracy |
+| Reasoning | **HellaSwag** | 0-shot | Accuracy |
+| Long Context | **InfiniteBench/En.MC** | 128k | Accuracy |
+| Long Context | **InfiniteBench/En.QA** | 128k | Accuracy |
+| Long Context | **NIH/Multi-needle** | — | Accuracy |
+| Multilingual | **MGSM** | 0-shot, CoT | Exact match |
+
+### Vision Benchmarks (Instruction Tuned)
+
+| Category | Benchmark | Setup | Metric |
+|----------|-----------|-------|--------|
+| College-level | **MMMU** | 0-shot CoT, micro avg accuracy | Accuracy |
+| College-level | **MMMU-Pro, Standard** | 10-opts, text | Accuracy |
+| College-level | **MMMU-Pro, Vision** | text | Accuracy |
+| Math | **MathVista** | testmini | Accuracy |
+| Charts & Diagrams | **ChartQA** | 0-shot CoT, relaxed accuracy | Accuracy |
+| Charts & Diagrams | **AI2 Diagram** | test | Accuracy |
+| Document | **DocVQA** | ANLS | ANLS |
+| Visual QA | **VQAv2** | test | Accuracy |
 
 ### Efficiency Metrics
 - **Latency** - Time per token (ms/token)
