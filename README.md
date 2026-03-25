@@ -123,13 +123,24 @@ We anticipate finding clear trade-offs in the accuracy-latency space:
 - [Phi-3 Technical Report](https://arxiv.org/abs/2404.14219)
 - [Efficient Model Deployment Best Practices](https://huggingface.co/docs/transformers/main/en/perf_infer_gpu_one)
 
+## 📅 Milestones (Target: April 13)
+
+| Milestone | Deadline | Deliverables |
+|-----------|----------|--------------|
+| **M1** — Environment & Setup | Mar 28 | `pip install`, download models, confirm GPU access (Colab or local) |
+| **M2** — Benchmark Runner + Quantization | Apr 2 | Finalize eval scripts (15 text + 8 vision), quantization wrapper (FP16/INT8/INT4), smoke test on TinyLlama |
+| **M3** — Full Experiment Matrix | Apr 6 | Run all model × quant × benchmark combos, collect latency/memory, commit raw results |
+| **M4** — Analysis & Visualization | Apr 9 | Pareto frontier plot, comparison tables, charts, statistical significance tests |
+| **M5** — Presentation & Report | Apr 13 | Slides finalized, NeurIPS report draft, Colab demo ready |
+
 ## 📋 Progress
 
 - [x] Repository setup and documentation
 - [x] Model download automation
 - [x] Colab integration
 - [x] Benchmark framework scaffold (15 text + 8 vision)
-- [ ] Quantization pipeline (FP16 / INT8 / INT4 via bitsandbytes)
+- [x] Quantization wrapper (FP16 / INT8 / INT4 via bitsandbytes)
+- [ ] Finalize benchmark implementations
 - [ ] Latency & memory profiling
 - [ ] Full experiment matrix
 - [ ] Results analysis and visualization
