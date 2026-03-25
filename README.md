@@ -64,14 +64,42 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 - **Memory Usage** - Peak RAM consumption
 - **Quantization Impact** - FP16 vs INT8 vs INT4 performance
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### Option A: Google Colab (Recommended)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models/blob/main/notebooks/colab_setup.ipynb)
 
-1. Open the Colab setup notebook
-2. Run all cells to clone repo and install dependencies  
-3. Start benchmarking with free GPU access
+1. Click the badge above to open the Colab notebook
+2. Go to **Runtime → Change runtime type → T4 GPU**
+3. Run the setup cells to clone the repo and install dependencies:
+   ```python
+   !git clone https://github.com/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models.git
+   %cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
+   !pip install -r requirements-colab.txt
+   ```
+4. Download models (requires [Hugging Face token](https://huggingface.co/settings/tokens) for gated models like LLaMA):
+   ```python
+   !huggingface-cli login --token YOUR_TOKEN
+   !python scripts/download_models.py
+   ```
+5. Run a smoke test to verify everything works:
+   ```python
+   !python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
+   ```
+6. Run benchmarks:
+   ```python
+   # Single model + benchmark
+   !python -m benchmarks.runner --model llama-3.2-1b --quant int4 --benchmark mmlu
+
+   # All text benchmarks for one model
+   !python -m benchmarks.runner --model llama-3.2-1b --quant fp16
+
+   # Vision benchmarks (requires vision model)
+   !python -m benchmarks.runner --model llama-3.2-11b-vision --quant fp16 --benchmark mmmu --vision
+
+   # Full matrix
+   !python -m benchmarks.runner --all
+   ```
 
 ### Option B: Local Setup
 ```bash
@@ -79,8 +107,13 @@ git clone https://github.com/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimo
 cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
 python scripts/setup.py
 pip install -r requirements.txt
+huggingface-cli login
 python scripts/download_models.py
+
+# Smoke test
+python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
 ```
+> **Note:** Local setup requires a CUDA GPU for quantized inference (INT8/INT4). FP16 can run on CPU but will be slow.
 
 ## 📁 Repository Structure
 
