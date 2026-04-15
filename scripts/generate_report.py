@@ -60,7 +60,12 @@ def get_latest_benchmark(model_id: str) -> Optional[Tuple[str, Dict[str, object]
             continue
         if runtime.get("precision") != "fp16":
             continue
-        if config.get("benchmarks") != ["hellaswag", "arc", "gsm8k"]:
+        bench_list = config.get("benchmarks")
+        if (
+            not isinstance(bench_list, list)
+            or len(bench_list) != 3
+            or frozenset(bench_list) != {"hellaswag", "arc", "gsm8k"}
+        ):
             continue
         ts = datetime.fromisoformat(str(data.get("started_at_utc")))
         if latest is None or ts > latest[0]:
