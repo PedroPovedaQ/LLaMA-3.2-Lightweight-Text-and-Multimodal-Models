@@ -29,6 +29,13 @@ DISPLAY_NAME = {
     "microsoft/Phi-3-mini-4k-instruct": "Phi-3-mini",
 }
 
+# Use explicit colors so LLaMA and non-LLaMA models are visually distinct.
+MODEL_COLORS = {
+    "meta-llama/Llama-3.2-1B-Instruct": "#4C78A8",  # blue
+    "meta-llama/Llama-3.2-3B-Instruct": "#2E5C95",  # darker blue
+    "microsoft/Phi-3-mini-4k-instruct": "#E68613",  # orange (non-LLaMA)
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate PDF project snapshot report")
@@ -77,32 +84,40 @@ def get_latest_benchmark(model_id: str) -> Optional[Tuple[str, Dict[str, object]
 
 
 def get_latest_efficiency(model_id: str) -> Optional[Tuple[str, Dict[str, object]]]:
-    latest = None
-    for path in sorted(glob.glob(str(RAW_DIR / "efficiency_*.json"))):
-        data = load_json(path)
-        if data.get("run_type") != "efficiency":
-            continue
-        runtime = data.get("runtime", {})
-        config = data.get("config", {})
-        if runtime.get("model_id") != model_id:
-            continue
-        if runtime.get("device") not in {"cuda", "cpu", "mps"}:
-            continue
-        if runtime.get("precision") != "fp16":
-            continue
-        if config.get("num_prompts") != 5:
-            continue
-        if config.get("timed_runs") != 3:
-            continue
-        if config.get("max_new_tokens") != 64:
-            continue
-        ts = datetime.fromisoformat(str(data.get("started_at_utc")))
-        if latest is None or ts > latest[0]:
-            latest = (ts, path, data)
+    def select_latest(strict: bool) -> Optional[Tuple[str, Dict[str, object]]]:
+        latest = None
+        for path in sorted(glob.glob(str(RAW_DIR / "efficiency_*.json"))):
+            data = load_json(path)
+            if data.get("run_type") != "efficiency":
+                continue
+            runtime = data.get("runtime", {})
+            config = data.get("config", {})
+            if runtime.get("model_id") != model_id:
+                continue
+            if runtime.get("device") not in {"cuda", "cpu", "mps"}:
+                continue
+            if runtime.get("precision") != "fp16":
+                continue
+            if strict:
+                if config.get("num_prompts") != 5:
+                    continue
+                if config.get("timed_runs") != 3:
+                    continue
+                if config.get("max_new_tokens") != 64:
+                    continue
+            ts = datetime.fromisoformat(str(data.get("started_at_utc")))
+            if latest is None or ts > latest[0]:
+                latest = (ts, path, data)
 
-    if latest is None:
-        return None
-    return latest[1], latest[2]
+        if latest is None:
+            return None
+        return latest[1], latest[2]
+
+    # Prefer comparable settings, but fall back to latest fp16 efficiency run if needed.
+    strict_match = select_latest(strict=True)
+    if strict_match is not None:
+        return strict_match
+    return select_latest(strict=False)
 
 
 def benchmark_summary(data: Dict[str, object]) -> Dict[str, float]:
@@ -169,6 +184,7 @@ def add_title_page(pdf: PdfPages, bench_files: Dict[str, str], eff_files: Dict[s
 def add_accuracy_page(pdf: PdfPages, bench: Dict[str, Dict[str, float]]) -> None:
     labels = [DISPLAY_NAME[m] for m in TARGET_MODELS]
     x = range(len(labels))
+    colors = [MODEL_COLORS[m] for m in TARGET_MODELS]
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
     fig.suptitle("Benchmark Accuracy and Runtime (fp16)")
@@ -182,7 +198,7 @@ def add_accuracy_page(pdf: PdfPages, bench: Dict[str, Dict[str, float]]) -> None
 
     for ax, (key, title) in zip(axes.flatten(), metrics):
         values = [bench[m][key] for m in TARGET_MODELS]
-        ax.bar(labels, values)
+        ax.bar(labels, values, color=colors)
         ax.set_title(title)
         ax.tick_params(axis="x", rotation=20)
         for i, value in enumerate(values):
@@ -195,11 +211,10 @@ def add_accuracy_page(pdf: PdfPages, bench: Dict[str, Dict[str, float]]) -> None
 
 def add_efficiency_page(pdf: PdfPages, eff: Dict[str, Dict[str, float]]) -> None:
     labels = [DISPLAY_NAME[m] for m in TARGET_MODELS]
+    colors = [MODEL_COLORS[m] for m in TARGET_MODELS]
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
-    fig.suptitle(
-        "Efficiency Metrics (num_prompts=5, timed_runs=3, max_new_tokens=64, fp16)"
-    )
+    fig.suptitle("Efficiency Metrics (latest fp16 run per model)")
 
     metrics = [
         ("ttft_ms", "TTFT Mean (ms)"),
@@ -210,7 +225,7 @@ def add_efficiency_page(pdf: PdfPages, eff: Dict[str, Dict[str, float]]) -> None
 
     for ax, (key, title) in zip(axes.flatten(), metrics):
         values = [eff[m][key] for m in TARGET_MODELS]
-        ax.bar(labels, values)
+        ax.bar(labels, values, color=colors)
         ax.set_title(title)
         ax.tick_params(axis="x", rotation=20)
         for i, value in enumerate(values):

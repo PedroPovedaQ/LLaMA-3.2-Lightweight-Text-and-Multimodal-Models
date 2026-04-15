@@ -165,6 +165,23 @@ Notes:
 - `llama-cli` downloads may produce original `.pth` checkpoints; the current Transformers benchmark scripts require HF-formatted weights (`model.safetensors` / `pytorch_model.bin`).
 - Existing benchmark reruns in this repo were executed with HF-backed model loading (`scripts/run_benchmarks.py`) and Ollama for no-gate path (`scripts/run_benchmarks_ollama.py`).
 
+## 🔌 Extending Entry Points
+
+To add a new model key:
+1. Add one entry to `MODEL_SPECS` in `scripts/experiment_utils.py`.
+2. The new key will automatically appear in:
+   - `scripts/run_benchmarks.py --model-key ...`
+   - `scripts/run_efficiency.py --model-key ...`
+   - `scripts/download_models.py --models ...` (when using model keys)
+   - `scripts/run_benchmarks_ollama.py --model-key ...` if `ollama_tag` is set
+
+To add a new benchmark:
+1. Add an evaluator function to `scripts/benchmark_eval.py`.
+2. Register it in `BENCHMARK_EVALUATORS` in the same file.
+3. It will automatically appear in:
+   - `scripts/run_benchmarks.py --benchmarks ...`
+   - `scripts/run_benchmarks_ollama.py --benchmarks ...`
+
 ## 📁 Repository Structure
 
 ```
@@ -253,7 +270,8 @@ Notes:
 python scripts/aggregate_results.py
 ```
 
-This writes normalized metrics to `results/processed/metrics.csv` for plotting and Pareto analysis.
+This writes normalized metrics to `results/processed/metrics.csv` for plotting and Pareto analysis, and now also regenerates the PDF report by default.
+Use `--skip-report` to disable report generation.
 
 ### 4. Generate PDF Snapshot Report
 

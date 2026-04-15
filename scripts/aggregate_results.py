@@ -6,10 +6,12 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, Iterable, List
 
-from experiment_utils import PROCESSED_RESULTS_DIR, RAW_RESULTS_DIR, csv_safe
+from experiment_utils import PROCESSED_RESULTS_DIR, PROJECT_ROOT, RAW_RESULTS_DIR, csv_safe
 
 
 def parse_args() -> argparse.Namespace:
@@ -25,6 +27,22 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=str(PROCESSED_RESULTS_DIR / "metrics.csv"),
         help="Output CSV path",
+    )
+    parser.add_argument(
+        "--skip-report",
+        action="store_true",
+        help="Skip automatic PDF report generation after CSV aggregation",
+    )
+    parser.add_argument(
+        "--report-output",
+        type=str,
+        default=str(PROJECT_ROOT / "results" / "reports" / "project_snapshot_report.pdf"),
+        help="Output path passed to scripts/generate_report.py",
+    )
+    parser.add_argument(
+        "--strict-report",
+        action="store_true",
+        help="Fail if report generation fails",
     )
     return parser.parse_args()
 
@@ -185,6 +203,31 @@ def main() -> None:
     write_csv(rows, output_path)
     print(f"[aggregate] Loaded {len(payloads)} raw files")
     print(f"[aggregate] Wrote {len(rows)} rows to {output_path}")
+
+    if args.skip_report:
+        return
+
+    report_cmd = [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "generate_report.py"),
+        "--output",
+        args.report_output,
+    ]
+    print(f"[aggregate] Generating PDF report: {args.report_output}")
+    proc = subprocess.run(report_cmd, capture_output=True, text=True)
+    if proc.returncode == 0:
+        if proc.stdout.strip():
+            print(proc.stdout.strip())
+        print("[aggregate] Report generation complete")
+        return
+
+    print("[aggregate] Report generation failed")
+    if proc.stdout.strip():
+        print(proc.stdout.strip())
+    if proc.stderr.strip():
+        print(proc.stderr.strip())
+    if args.strict_report:
+        raise SystemExit(proc.returncode)
 
 
 if __name__ == "__main__":

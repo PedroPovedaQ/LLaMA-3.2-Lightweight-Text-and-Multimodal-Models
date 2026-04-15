@@ -88,3 +88,4 @@ jupyter notebook notebooks/model_comparison.ipynb
 - **Disk Space**: Models require ~10-50GB total storage
 - **Memory**: 8GB+ RAM recommended for 3B models
 - **GPU**: Optional but recommended for faster evaluation
+- `python scripts/aggregate_results.py` now regenerates the PDF report by default (use `--skip-report` to disable).

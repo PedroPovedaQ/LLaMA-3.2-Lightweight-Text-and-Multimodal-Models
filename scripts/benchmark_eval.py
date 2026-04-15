@@ -15,6 +15,7 @@ from experiment_utils import (
 )
 
 GenerateFn = Callable[[str, int], str]
+BenchmarkEvaluator = Callable[[GenerateFn, int, bool], Dict[str, object]]
 
 
 def evaluate_hellaswag(
@@ -225,3 +226,31 @@ def evaluate_gsm8k(
     if save_predictions:
         result["predictions"] = predictions
     return result
+
+
+# Benchmark registry entry point:
+# Add new benchmark evaluators here so both runner scripts pick them up automatically.
+BENCHMARK_EVALUATORS: Dict[str, BenchmarkEvaluator] = {
+    "hellaswag": evaluate_hellaswag,
+    "arc": evaluate_arc,
+    "gsm8k": evaluate_gsm8k,
+}
+
+
+def benchmark_names() -> List[str]:
+    """Ordered benchmark keys available to CLI users."""
+    return list(BENCHMARK_EVALUATORS.keys())
+
+
+def run_benchmark(
+    name: str,
+    generate_fn: GenerateFn,
+    limit: int,
+    save_predictions: bool,
+) -> Dict[str, object]:
+    """Dispatch helper used by both HF and Ollama benchmark runners."""
+    evaluator = BENCHMARK_EVALUATORS.get(name)
+    if evaluator is None:
+        valid = ", ".join(benchmark_names())
+        raise ValueError(f"Unknown benchmark {name!r}. Valid values: {valid}")
+    return evaluator(generate_fn, limit, save_predictions)

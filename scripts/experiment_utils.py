@@ -60,6 +60,8 @@ class ModelSpec:
     description: str
 
 
+# Model registry entry point:
+# Add new models here (HF id, optional Ollama tag, local download path, description).
 MODEL_SPECS: Dict[str, ModelSpec] = {
     "llama-3.2-1b": ModelSpec(
         hf_model_id="meta-llama/Llama-3.2-1B-Instruct",
@@ -204,8 +206,9 @@ def _build_model_load_kwargs(precision: str, device: str) -> Dict[str, object]:
     kwargs: Dict[str, object] = {"low_cpu_mem_usage": True}
 
     if precision == "fp16":
-        if device in {"cuda", "mps"}:
-            kwargs["torch_dtype"] = torch.float16
+        # Always set fp16 explicitly so runtime metadata matches the actual load dtype
+        # on every device, including CPU.
+        kwargs["torch_dtype"] = torch.float16
     elif precision == "bf16":
         if device == "cuda":
             kwargs["torch_dtype"] = torch.bfloat16

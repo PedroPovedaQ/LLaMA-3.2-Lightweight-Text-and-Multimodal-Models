@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from benchmark_eval import evaluate_arc, evaluate_gsm8k, evaluate_hellaswag
+from benchmark_eval import benchmark_names, run_benchmark
 from experiment_utils import (
     MODEL_SPECS,
     RAW_RESULTS_DIR,
@@ -26,6 +26,7 @@ OLLAMA_MODEL_KEYS = sorted(k for k, s in MODEL_SPECS.items() if s.ollama_tag is 
 
 
 def parse_args() -> argparse.Namespace:
+    available_benchmarks = benchmark_names()
     parser = argparse.ArgumentParser(description="Run Ollama-backed benchmark evaluations")
     parser.add_argument(
         "--model-tag",
@@ -43,8 +44,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--benchmarks",
         nargs="+",
-        choices=["hellaswag", "arc", "gsm8k"],
-        default=["hellaswag", "arc", "gsm8k"],
+        # Pulled from benchmark_eval.BENCHMARK_EVALUATORS registry.
+        choices=available_benchmarks,
+        default=available_benchmarks,
         help="Benchmarks to run",
     )
     parser.add_argument("--limit", type=int, default=100, help="Examples per benchmark")
@@ -157,20 +159,9 @@ def main() -> None:
     benchmark_results = []
     for bench in args.benchmarks:
         print(f"[benchmark-ollama] Running {bench}...")
-        if bench == "hellaswag":
-            benchmark_results.append(
-                evaluate_hellaswag(generate_fn, args.limit, args.save_predictions)
-            )
-        elif bench == "arc":
-            benchmark_results.append(
-                evaluate_arc(generate_fn, args.limit, args.save_predictions)
-            )
-        elif bench == "gsm8k":
-            benchmark_results.append(
-                evaluate_gsm8k(generate_fn, args.limit, args.save_predictions)
-            )
-        else:
-            raise ValueError(f"Unknown benchmark: {bench}")
+        benchmark_results.append(
+            run_benchmark(bench, generate_fn, args.limit, args.save_predictions)
+        )
 
     ended_at = datetime.now(timezone.utc)
     summary = {

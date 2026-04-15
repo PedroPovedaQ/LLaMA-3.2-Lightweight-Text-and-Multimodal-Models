@@ -16,7 +16,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency at runtime
     torch = None
 
-from benchmark_eval import evaluate_arc, evaluate_gsm8k, evaluate_hellaswag
+from benchmark_eval import benchmark_names, run_benchmark
 from experiment_utils import (
     MODEL_KEYS,
     RAW_RESULTS_DIR,
@@ -31,6 +31,7 @@ from experiment_utils import (
 )
 
 def parse_args() -> argparse.Namespace:
+    available_benchmarks = benchmark_names()
     parser = argparse.ArgumentParser(description="Run baseline benchmark evaluations")
     parser.add_argument("--model-id", type=str, default=None, help="Hugging Face model id")
     parser.add_argument(
@@ -43,8 +44,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--benchmarks",
         nargs="+",
-        choices=["hellaswag", "arc", "gsm8k"],
-        default=["hellaswag", "arc", "gsm8k"],
+        # Pulled from benchmark_eval.BENCHMARK_EVALUATORS registry.
+        choices=available_benchmarks,
+        default=available_benchmarks,
         help="Benchmarks to run",
     )
     parser.add_argument("--limit", type=int, default=100, help="Examples per benchmark")
@@ -127,20 +129,9 @@ def main() -> None:
     benchmark_results = []
     for bench in args.benchmarks:
         print(f"[benchmark] Running {bench}...")
-        if bench == "hellaswag":
-            benchmark_results.append(
-                evaluate_hellaswag(generate_fn, args.limit, args.save_predictions)
-            )
-        elif bench == "arc":
-            benchmark_results.append(
-                evaluate_arc(generate_fn, args.limit, args.save_predictions)
-            )
-        elif bench == "gsm8k":
-            benchmark_results.append(
-                evaluate_gsm8k(generate_fn, args.limit, args.save_predictions)
-            )
-        else:
-            raise ValueError(f"Unknown benchmark: {bench}")
+        benchmark_results.append(
+            run_benchmark(bench, generate_fn, args.limit, args.save_predictions)
+        )
 
     ended_at = datetime.now(timezone.utc)
     summary = {
