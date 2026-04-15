@@ -22,6 +22,7 @@ except Exception:  # pragma: no cover - optional dependency at runtime
     torch = None
 
 from experiment_utils import (
+    MODEL_KEYS,
     RAW_RESULTS_DIR,
     capture_hardware_info,
     ensure_results_dirs,
@@ -29,17 +30,9 @@ from experiment_utils import (
     load_model_and_tokenizer,
     make_run_id,
     model_input_device,
+    resolve_model_id,
     save_json,
 )
-
-MODEL_KEYS = {
-    "llama-3.2-1b": "meta-llama/Llama-3.2-1B-Instruct",
-    "llama-3.2-3b": "meta-llama/Llama-3.2-3B-Instruct",
-    "phi-3-mini": "microsoft/Phi-3-mini-4k-instruct",
-    "gemma-2b": "google/gemma-2b-it",
-    "tinyllama": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-    "qwen2-1.5b": "Qwen/Qwen2-1.5B-Instruct",
-}
 
 DEFAULT_PROMPTS = [
     "Summarize the causes of the French Revolution in four bullet points.",
@@ -85,12 +78,6 @@ def parse_args() -> argparse.Namespace:
         help="Optional explicit output path for raw efficiency JSON",
     )
     return parser.parse_args()
-
-
-def resolve_model_id(args: argparse.Namespace) -> str:
-    if args.model_id:
-        return args.model_id
-    return MODEL_KEYS[args.model_key]
 
 
 def load_prompts(prompt_file: Optional[str], num_prompts: int) -> List[str]:

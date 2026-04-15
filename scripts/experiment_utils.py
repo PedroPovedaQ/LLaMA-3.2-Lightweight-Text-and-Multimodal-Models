@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import platform
 import re
@@ -47,6 +48,22 @@ class RuntimeConfig:
     precision: str
     device: str
     cache_dir: Optional[str]
+
+
+MODEL_KEYS: Dict[str, str] = {
+    "llama-3.2-1b": "meta-llama/Llama-3.2-1B-Instruct",
+    "llama-3.2-3b": "meta-llama/Llama-3.2-3B-Instruct",
+    "phi-3-mini": "microsoft/Phi-3-mini-4k-instruct",
+    "gemma-2b": "google/gemma-2b-it",
+    "tinyllama": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "qwen2-1.5b": "Qwen/Qwen2-1.5B-Instruct",
+}
+
+
+def resolve_model_id(args: argparse.Namespace) -> str:
+    if args.model_id:
+        return args.model_id
+    return MODEL_KEYS[args.model_key]
 
 
 def make_run_id(prefix: str) -> str:

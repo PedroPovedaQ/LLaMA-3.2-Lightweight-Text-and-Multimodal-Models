@@ -58,8 +58,6 @@ def get_latest_benchmark(model_id: str) -> Optional[Tuple[str, Dict[str, object]
             continue
         if runtime.get("device") != "mps" or runtime.get("precision") != "fp16":
             continue
-        if config.get("limit") != 20:
-            continue
         if config.get("benchmarks") != ["hellaswag", "arc", "gsm8k"]:
             continue
         ts = datetime.fromisoformat(str(data.get("started_at_utc")))
@@ -157,7 +155,7 @@ def add_accuracy_page(pdf: PdfPages, bench: Dict[str, Dict[str, float]]) -> None
     x = range(len(labels))
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
-    fig.suptitle("Benchmark Accuracy and Runtime (limit=20, fp16, mps)")
+    fig.suptitle("Benchmark Accuracy and Runtime (fp16, mps)")
 
     metrics = [
         ("hellaswag_acc", "HellaSwag Accuracy"),
@@ -238,7 +236,7 @@ def add_interpretation_page(
         f"- Lowest latency/token: {DISPLAY_NAME[min(TARGET_MODELS, key=lambda m: eff[m]['latency_ms_per_token'])]}",
         "",
         "Caveat:",
-        "- These are small-sample benchmark runs (limit=20). Use larger limits for final claims.",
+        "- Benchmark sample size follows each run's configured limit; use larger limits for final claims.",
     ])
 
     fig.text(0.05, 0.95, "\n".join(lines), va="top", family="monospace", fontsize=11)
