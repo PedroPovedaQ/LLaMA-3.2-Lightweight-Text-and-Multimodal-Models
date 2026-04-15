@@ -30,7 +30,7 @@ def main() -> int:
     try:
         llama_main()
     except SystemExit as exc:
-        code = exc.code if isinstance(exc.code, int) else 1
+        code = 0 if exc.code is None else (exc.code if isinstance(exc.code, int) else 1)
         return code
     return 0
 
