@@ -1,162 +1,243 @@
 #!/usr/bin/env python3
 """
-Model download script for small model comparison project.
-Downloads and sets up target models for evaluation.
+Model download/pull script for small model comparison project.
+Supports both Hugging Face and Ollama providers.
 """
 
-import os
 import argparse
+import json
+import os
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, Optional
 
-def setup_huggingface():
+
+def setup_huggingface() -> bool:
     """Setup Hugging Face authentication if needed."""
     try:
-        from huggingface_hub import login, whoami
+        from huggingface_hub import whoami
+
         try:
             user = whoami()
             print(f"✅ Already logged in to Hugging Face as: {user['name']}")
             return True
-        except:
+        except Exception:
             print("🔐 Hugging Face login required for some models")
-            print("Run: huggingface-cli login")
+            print("Run: hf auth login")
             return False
     except ImportError:
         print("⚠️  huggingface_hub not installed")
         return False
 
-def download_model(model_name: str, model_path: str, cache_dir: str = None) -> bool:
-    """Download a model from Hugging Face."""
+
+def ensure_ollama_available() -> bool:
+    """Verify ollama CLI exists."""
     try:
-        from transformers import AutoTokenizer, AutoModelForCausalLM
-        
-        print(f"📥 Downloading {model_name}...")
-        
-        # Download tokenizer
+        proc = subprocess.run(
+            ["ollama", "--version"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        version = (proc.stdout or proc.stderr).strip()
+        print(f"✅ Ollama available: {version}")
+        return True
+    except FileNotFoundError:
+        print("❌ Ollama CLI not found. Install from: https://ollama.com/download")
+        return False
+    except subprocess.CalledProcessError as exc:
+        print(f"❌ Failed to run ollama CLI: {exc}")
+        return False
+
+
+def get_model_config() -> Dict[str, Dict[str, Optional[str]]]:
+    """Get configuration for all target models across providers."""
+    return {
+        "llama-3.2-1b": {
+            "hf_name": "meta-llama/Llama-3.2-1B-Instruct",
+            "ollama_name": "llama3.2:1b",
+            "path": "models/llama-3.2-1b",
+            "description": "LLaMA 3.2 1B parameter model",
+        },
+        "llama-3.2-3b": {
+            "hf_name": "meta-llama/Llama-3.2-3B-Instruct",
+            "ollama_name": "llama3.2",
+            "path": "models/llama-3.2-3b",
+            "description": "LLaMA 3.2 3B parameter model",
+        },
+        "phi-3-mini": {
+            "hf_name": "microsoft/Phi-3-mini-4k-instruct",
+            "ollama_name": "phi3:mini",
+            "path": "models/phi-3-mini",
+            "description": "Microsoft Phi-3 Mini model",
+        },
+        "gemma-2b": {
+            "hf_name": "google/gemma-2b-it",
+            "ollama_name": None,
+            "path": "models/others/gemma-2b",
+            "description": "Google Gemma 2B model",
+        },
+        "tinyllama": {
+            "hf_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            "ollama_name": "tinyllama",
+            "path": "models/others/tinyllama-1.1b",
+            "description": "TinyLlama 1.1B model",
+        },
+        "qwen2-1.5b": {
+            "hf_name": "Qwen/Qwen2-1.5B-Instruct",
+            "ollama_name": None,
+            "path": "models/others/qwen2-1.5b",
+            "description": "Qwen2 1.5B model",
+        },
+    }
+
+
+def download_model_hf(model_name: str, model_path: str, cache_dir: Optional[str] = None) -> bool:
+    """Download a model from Hugging Face and save locally."""
+    try:
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        print(f"📥 Downloading from Hugging Face: {model_name}...")
+
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             cache_dir=cache_dir,
-            trust_remote_code=True
+            trust_remote_code=True,
         )
-        
-        # Download model  
+
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             cache_dir=cache_dir,
             trust_remote_code=True,
-            torch_dtype="auto"  # Use appropriate dtype
+            dtype="auto",
         )
-        
-        # Save locally
+
         os.makedirs(model_path, exist_ok=True)
         tokenizer.save_pretrained(model_path)
         model.save_pretrained(model_path)
-        
+
         print(f"✅ {model_name} downloaded to {model_path}")
         return True
-        
-    except Exception as e:
-        print(f"❌ Failed to download {model_name}: {str(e)}")
+
+    except Exception as exc:
+        print(f"❌ Failed to download {model_name}: {exc}")
         return False
 
-def get_model_config() -> Dict[str, Dict]:
-    """Get configuration for all target models."""
-    return {
-        "llama-3.2-1b": {
-            "hf_name": "meta-llama/Llama-3.2-1B-Instruct",
-            "path": "models/llama-3.2-1b",
-            "description": "LLaMA 3.2 1B parameter model"
-        },
-        "llama-3.2-3b": {
-            "hf_name": "meta-llama/Llama-3.2-3B-Instruct", 
-            "path": "models/llama-3.2-3b",
-            "description": "LLaMA 3.2 3B parameter model"
-        },
-        "phi-3-mini": {
-            "hf_name": "microsoft/Phi-3-mini-4k-instruct",
-            "path": "models/phi-3-mini", 
-            "description": "Microsoft Phi-3 Mini model"
-        },
-        "gemma-2b": {
-            "hf_name": "google/gemma-2b-it",
-            "path": "models/others/gemma-2b",
-            "description": "Google Gemma 2B model"
-        },
-        "tinyllama": {
-            "hf_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            "path": "models/others/tinyllama-1.1b",
-            "description": "TinyLlama 1.1B model"
-        },
-        "qwen2-1.5b": {
-            "hf_name": "Qwen/Qwen2-1.5B-Instruct",
-            "path": "models/others/qwen2-1.5b", 
-            "description": "Qwen2 1.5B model"
-        }
-    }
 
-def main():
-    parser = argparse.ArgumentParser(description="Download models for comparison")
+def pull_model_ollama(ollama_name: str, model_path: str, model_key: str) -> bool:
+    """Pull a model from Ollama and write a local manifest pointer."""
+    try:
+        print(f"📥 Pulling from Ollama: {ollama_name}...")
+        subprocess.run(["ollama", "pull", ollama_name], check=True)
+
+        os.makedirs(model_path, exist_ok=True)
+        manifest_path = Path(model_path) / "OLLAMA_MODEL.json"
+        with manifest_path.open("w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "model_key": model_key,
+                    "provider": "ollama",
+                    "ollama_name": ollama_name,
+                    "pulled_at_utc": datetime.now(timezone.utc).isoformat(),
+                    "note": "Model blob is stored in Ollama's local model store.",
+                },
+                f,
+                indent=2,
+                ensure_ascii=True,
+            )
+
+        print(f"✅ {ollama_name} pulled via Ollama")
+        print(f"📄 Wrote pointer manifest: {manifest_path}")
+        return True
+    except subprocess.CalledProcessError as exc:
+        print(f"❌ Failed to pull {ollama_name} via Ollama: {exc}")
+        return False
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Download/pull models for comparison")
     parser.add_argument(
-        "--models", 
+        "--provider",
+        choices=["hf", "ollama"],
+        default="hf",
+        help="Model provider: hf (Hugging Face) or ollama",
+    )
+    parser.add_argument(
+        "--models",
         nargs="+",
-        choices=["all", "llama-3.2-1b", "llama-3.2-3b", "phi-3-mini", "gemma-2b", "tinyllama", "qwen2-1.5b"],
+        choices=[
+            "all",
+            "llama-3.2-1b",
+            "llama-3.2-3b",
+            "phi-3-mini",
+            "gemma-2b",
+            "tinyllama",
+            "qwen2-1.5b",
+        ],
         default=["llama-3.2-1b", "llama-3.2-3b", "phi-3-mini"],
-        help="Models to download"
+        help="Models to download/pull",
     )
     parser.add_argument(
         "--cache-dir",
         type=str,
         default=None,
-        help="Cache directory for downloads"
+        help="Cache directory for Hugging Face downloads",
     )
-    
+
     args = parser.parse_args()
-    
-    # Setup
+
     project_root = Path(__file__).parent.parent
     os.chdir(project_root)
-    
-    print("🤗 Setting up Hugging Face...")
-    setup_huggingface()
-    
-    # Get model configuration
+
     model_config = get_model_config()
-    
-    # Determine which models to download
+
     if "all" in args.models:
-        models_to_download = list(model_config.keys())
+        models_to_process = list(model_config.keys())
     else:
-        models_to_download = args.models
-    
-    print(f"\n📥 Downloading {len(models_to_download)} models...")
+        models_to_process = args.models
+
+    if args.provider == "hf":
+        print("🤗 Using Hugging Face provider...")
+        setup_huggingface()
+    else:
+        print("🦙 Using Ollama provider...")
+        if not ensure_ollama_available():
+            raise SystemExit(1)
+
+    print(f"\n📥 Processing {len(models_to_process)} models...")
     print("=" * 50)
-    
-    # Download models
+
     success_count = 0
-    for model_key in models_to_download:
-        if model_key not in model_config:
-            print(f"❌ Unknown model: {model_key}")
-            continue
-            
+    for model_key in models_to_process:
         config = model_config[model_key]
         print(f"\n📦 {config['description']}")
-        
-        if download_model(
-            config["hf_name"], 
-            config["path"], 
-            args.cache_dir
-        ):
-            success_count += 1
-    
-    # Summary
+
+        if args.provider == "hf":
+            if download_model_hf(config["hf_name"], config["path"], args.cache_dir):
+                success_count += 1
+        else:
+            if not config.get("ollama_name"):
+                print(
+                    f"⚠️  No Ollama mapping for {model_key}. "
+                    "Use --provider hf for this model."
+                )
+                continue
+            if pull_model_ollama(config["ollama_name"], config["path"], model_key):
+                success_count += 1
+
     print("\n" + "=" * 50)
-    print(f"✅ Successfully downloaded {success_count}/{len(models_to_download)} models")
-    
-    if success_count < len(models_to_download):
-        print("\n⚠️  Some downloads failed. Check:")
+    print(f"✅ Successfully processed {success_count}/{len(models_to_process)} models")
+
+    if success_count < len(models_to_process):
+        print("\n⚠️  Some models failed. Check:")
         print("1. Internet connection")
-        print("2. Hugging Face authentication (for gated models)")
+        if args.provider == "hf":
+            print("2. Hugging Face authentication / gated model approval")
+        else:
+            print("2. Ollama installation and available model tags")
         print("3. Sufficient disk space")
+
 
 if __name__ == "__main__":
     main()

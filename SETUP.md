@@ -26,11 +26,14 @@ git push -u origin main
 ## 3. Download Models
 
 ```bash
-# Download core models (LLaMA 3.2 + Phi-3)
+# Download core models from Hugging Face (official checkpoints)
 python scripts/download_models.py
 
 # Or download all models
 python scripts/download_models.py --models all
+
+# Pull core models from Ollama (reliable mirror path, no HF gate needed)
+python scripts/download_models.py --provider ollama --models llama-3.2-1b llama-3.2-3b phi-3-mini
 ```
 
 ## 4. Run Initial Tests
@@ -57,7 +60,12 @@ jupyter notebook notebooks/model_comparison.ipynb
 
 - **Hugging Face Login**: Some models require authentication
   ```bash
-  huggingface-cli login
+  hf auth login
+  ```
+
+- **Ollama Mirror Option**: install Ollama first if using `--provider ollama`
+  ```bash
+  ollama --version
   ```
 
 - **Disk Space**: Models require ~10-50GB total storage
