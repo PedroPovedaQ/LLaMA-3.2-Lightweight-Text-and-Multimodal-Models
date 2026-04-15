@@ -50,14 +50,56 @@ class RuntimeConfig:
     cache_dir: Optional[str]
 
 
-MODEL_KEYS: Dict[str, str] = {
-    "llama-3.2-1b": "meta-llama/Llama-3.2-1B-Instruct",
-    "llama-3.2-3b": "meta-llama/Llama-3.2-3B-Instruct",
-    "phi-3-mini": "microsoft/Phi-3-mini-4k-instruct",
-    "gemma-2b": "google/gemma-2b-it",
-    "tinyllama": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-    "qwen2-1.5b": "Qwen/Qwen2-1.5B-Instruct",
+@dataclass(frozen=True)
+class ModelSpec:
+    """Canonical per-model identifiers for HF downloads, Ollama pulls, and CLI keys."""
+
+    hf_model_id: str
+    ollama_tag: Optional[str]
+    download_path: str
+    description: str
+
+
+MODEL_SPECS: Dict[str, ModelSpec] = {
+    "llama-3.2-1b": ModelSpec(
+        hf_model_id="meta-llama/Llama-3.2-1B-Instruct",
+        ollama_tag="llama3.2:1b",
+        download_path="models/llama-3.2-1b",
+        description="LLaMA 3.2 1B parameter model",
+    ),
+    "llama-3.2-3b": ModelSpec(
+        hf_model_id="meta-llama/Llama-3.2-3B-Instruct",
+        ollama_tag="llama3.2",
+        download_path="models/llama-3.2-3b",
+        description="LLaMA 3.2 3B parameter model",
+    ),
+    "phi-3-mini": ModelSpec(
+        hf_model_id="microsoft/Phi-3-mini-4k-instruct",
+        ollama_tag="phi3:mini",
+        download_path="models/phi-3-mini",
+        description="Microsoft Phi-3 Mini model",
+    ),
+    "gemma-2b": ModelSpec(
+        hf_model_id="google/gemma-2b-it",
+        ollama_tag=None,
+        download_path="models/others/gemma-2b",
+        description="Google Gemma 2B model",
+    ),
+    "tinyllama": ModelSpec(
+        hf_model_id="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        ollama_tag="tinyllama",
+        download_path="models/others/tinyllama-1.1b",
+        description="TinyLlama 1.1B model",
+    ),
+    "qwen2-1.5b": ModelSpec(
+        hf_model_id="Qwen/Qwen2-1.5B-Instruct",
+        ollama_tag=None,
+        download_path="models/others/qwen2-1.5b",
+        description="Qwen2 1.5B model",
+    ),
 }
+
+MODEL_KEYS: Dict[str, str] = {k: v.hf_model_id for k, v in MODEL_SPECS.items()}
 
 
 def resolve_model_id(args: argparse.Namespace) -> str:

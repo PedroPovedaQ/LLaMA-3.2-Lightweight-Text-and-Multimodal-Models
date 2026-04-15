@@ -56,7 +56,9 @@ def get_latest_benchmark(model_id: str) -> Optional[Tuple[str, Dict[str, object]
         config = data.get("config", {})
         if runtime.get("model_id") != model_id:
             continue
-        if runtime.get("device") != "mps" or runtime.get("precision") != "fp16":
+        if runtime.get("device") not in {"cuda", "cpu", "mps"}:
+            continue
+        if runtime.get("precision") != "fp16":
             continue
         if config.get("benchmarks") != ["hellaswag", "arc", "gsm8k"]:
             continue
@@ -79,7 +81,9 @@ def get_latest_efficiency(model_id: str) -> Optional[Tuple[str, Dict[str, object
         config = data.get("config", {})
         if runtime.get("model_id") != model_id:
             continue
-        if runtime.get("device") != "mps" or runtime.get("precision") != "fp16":
+        if runtime.get("device") not in {"cuda", "cpu", "mps"}:
+            continue
+        if runtime.get("precision") != "fp16":
             continue
         if config.get("num_prompts") != 5:
             continue
@@ -155,7 +159,7 @@ def add_accuracy_page(pdf: PdfPages, bench: Dict[str, Dict[str, float]]) -> None
     x = range(len(labels))
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
-    fig.suptitle("Benchmark Accuracy and Runtime (fp16, mps)")
+    fig.suptitle("Benchmark Accuracy and Runtime (fp16)")
 
     metrics = [
         ("hellaswag_acc", "HellaSwag Accuracy"),
@@ -181,7 +185,9 @@ def add_efficiency_page(pdf: PdfPages, eff: Dict[str, Dict[str, float]]) -> None
     labels = [DISPLAY_NAME[m] for m in TARGET_MODELS]
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
-    fig.suptitle("Efficiency Metrics (num_prompts=5, timed_runs=3, max_new_tokens=64, fp16, mps)")
+    fig.suptitle(
+        "Efficiency Metrics (num_prompts=5, timed_runs=3, max_new_tokens=64, fp16)"
+    )
 
     metrics = [
         ("ttft_ms", "TTFT Mean (ms)"),
@@ -260,9 +266,9 @@ def main() -> None:
         eff = get_latest_efficiency(model_id)
         if bench is None:
             missing.append(f"Missing benchmark run for {model_id}")
-            continue
         if eff is None:
             missing.append(f"Missing efficiency run for {model_id}")
+        if bench is None or eff is None:
             continue
 
         bench_path, bench_json = bench

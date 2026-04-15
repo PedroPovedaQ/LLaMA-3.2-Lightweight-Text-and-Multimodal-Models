@@ -14,6 +14,7 @@ from typing import Dict, List, Optional
 
 from benchmark_eval import evaluate_arc, evaluate_gsm8k, evaluate_hellaswag
 from experiment_utils import (
+    MODEL_SPECS,
     RAW_RESULTS_DIR,
     capture_hardware_info,
     ensure_results_dirs,
@@ -21,12 +22,8 @@ from experiment_utils import (
     save_json,
 )
 
-MODEL_TAGS = {
-    "llama-3.2-1b": "llama3.2:1b",
-    "llama-3.2-3b": "llama3.2",
-    "phi-3-mini": "phi3:mini",
-    "tinyllama": "tinyllama",
-}
+OLLAMA_MODEL_KEYS = sorted(k for k, s in MODEL_SPECS.items() if s.ollama_tag is not None)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Ollama-backed benchmark evaluations")
@@ -39,7 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--model-key",
         type=str,
-        choices=sorted(MODEL_TAGS.keys()),
+        choices=OLLAMA_MODEL_KEYS,
         default="llama-3.2-1b",
         help="Shorthand key for an Ollama model tag",
     )
@@ -81,7 +78,10 @@ def parse_args() -> argparse.Namespace:
 def resolve_model_tag(args: argparse.Namespace) -> str:
     if args.model_tag:
         return args.model_tag
-    return MODEL_TAGS[args.model_key]
+    tag = MODEL_SPECS[args.model_key].ollama_tag
+    if tag is None:
+        raise ValueError(f"No Ollama tag configured for model key {args.model_key!r}")
+    return tag
 
 
 def set_seed(seed: int) -> None:

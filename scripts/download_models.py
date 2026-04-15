@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
+from experiment_utils import MODEL_SPECS
+
 
 def setup_huggingface() -> bool:
     """Setup Hugging Face authentication if needed."""
@@ -54,42 +56,13 @@ def ensure_ollama_available() -> bool:
 def get_model_config() -> Dict[str, Dict[str, Optional[str]]]:
     """Get configuration for all target models across providers."""
     return {
-        "llama-3.2-1b": {
-            "hf_name": "meta-llama/Llama-3.2-1B-Instruct",
-            "ollama_name": "llama3.2:1b",
-            "path": "models/llama-3.2-1b",
-            "description": "LLaMA 3.2 1B parameter model",
-        },
-        "llama-3.2-3b": {
-            "hf_name": "meta-llama/Llama-3.2-3B-Instruct",
-            "ollama_name": "llama3.2",
-            "path": "models/llama-3.2-3b",
-            "description": "LLaMA 3.2 3B parameter model",
-        },
-        "phi-3-mini": {
-            "hf_name": "microsoft/Phi-3-mini-4k-instruct",
-            "ollama_name": "phi3:mini",
-            "path": "models/phi-3-mini",
-            "description": "Microsoft Phi-3 Mini model",
-        },
-        "gemma-2b": {
-            "hf_name": "google/gemma-2b-it",
-            "ollama_name": None,
-            "path": "models/others/gemma-2b",
-            "description": "Google Gemma 2B model",
-        },
-        "tinyllama": {
-            "hf_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            "ollama_name": "tinyllama",
-            "path": "models/others/tinyllama-1.1b",
-            "description": "TinyLlama 1.1B model",
-        },
-        "qwen2-1.5b": {
-            "hf_name": "Qwen/Qwen2-1.5B-Instruct",
-            "ollama_name": None,
-            "path": "models/others/qwen2-1.5b",
-            "description": "Qwen2 1.5B model",
-        },
+        key: {
+            "hf_name": spec.hf_model_id,
+            "ollama_name": spec.ollama_tag,
+            "path": spec.download_path,
+            "description": spec.description,
+        }
+        for key, spec in MODEL_SPECS.items()
     }
 
 
