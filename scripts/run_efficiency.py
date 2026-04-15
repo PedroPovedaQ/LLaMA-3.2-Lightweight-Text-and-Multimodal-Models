@@ -285,7 +285,7 @@ def main() -> None:
     if args.output:
         output_path = Path(args.output)
     else:
-        output_path = RAW_RESULTS_DIR / f"efficiency_{run_id}.json"
+        output_path = RAW_RESULTS_DIR / f"{run_id}.json"
 
     save_json(summary, output_path)
     print(f"[efficiency] Saved results to: {output_path}")

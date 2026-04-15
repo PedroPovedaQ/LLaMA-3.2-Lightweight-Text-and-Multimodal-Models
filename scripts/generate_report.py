@@ -183,7 +183,7 @@ def add_efficiency_page(pdf: PdfPages, eff: Dict[str, Dict[str, float]]) -> None
     labels = [DISPLAY_NAME[m] for m in TARGET_MODELS]
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
-    fig.suptitle("Efficiency Metrics (num_prompts=5, timed_runs=2, max_new_tokens=64, fp16, mps)")
+    fig.suptitle("Efficiency Metrics (num_prompts=5, timed_runs=3, max_new_tokens=64, fp16, mps)")
 
     metrics = [
         ("ttft_ms", "TTFT Mean (ms)"),
