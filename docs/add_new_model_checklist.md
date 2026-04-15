@@ -64,7 +64,7 @@ Outputs:
 - Aggregated CSV: `results/processed/metrics.csv`
 - PDF report: `results/reports/project_snapshot_report.pdf`
 
-## 7) Optional: include model in snapshot PDF comparison
+## 7) Include model in snapshot PDF comparison
 
 Edit `scripts/generate_report.py`:
 - Add model ID to `TARGET_MODELS`
@@ -72,16 +72,6 @@ Edit `scripts/generate_report.py`:
 - Add color to `MODEL_COLORS`
 
 Without this step, the model still benchmarks correctly, but it will not appear on the current fixed 3-model PDF pages.
-
-## 8) Optional: connect model to unified framework runner
-
-If you also use:
-
-```bash
-python -m benchmarks.runner ...
-```
-
-Add the model key and HF ID to `benchmarks/utils/quantization.py` in `MODEL_REGISTRY`.
 
 ## 9) Verification checklist
 
