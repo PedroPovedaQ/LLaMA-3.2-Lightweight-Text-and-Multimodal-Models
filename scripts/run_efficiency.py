@@ -106,6 +106,8 @@ def load_prompts(prompt_file: Optional[str], num_prompts: int) -> List[str]:
 def _synchronize_if_needed(runtime_device: str) -> None:
     if torch is not None and runtime_device == "cuda" and torch.cuda.is_available():
         torch.cuda.synchronize()
+    elif torch is not None and runtime_device == "mps" and torch.backends.mps.is_available():
+        torch.mps.synchronize()
 
 
 def timed_generate(model, tokenizer, runtime, prompt: str, max_new_tokens: int) -> Dict[str, float]:
