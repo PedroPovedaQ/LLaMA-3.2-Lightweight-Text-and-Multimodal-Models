@@ -33,11 +33,38 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 
 ## 🧪 Evaluation Framework
 
-### Performance Benchmarks
-- **MMLU** - Multitask language understanding
-- **GSM8K** - Mathematical reasoning
-- **HellaSwag** - Commonsense reasoning
-- **ARC-Challenge** - Reading comprehension
+### Text Benchmarks
+
+| Category | Benchmark | Setup | Metric |
+|----------|-----------|-------|--------|
+| General | **MMLU** | 5-shot | Accuracy |
+| General | **Open-rewrite eval** | 0-shot, rougeL | rougeL |
+| General | **TLDR9+** | 1-shot, rougeL | rougeL |
+| General | **IFEval** | — | Accuracy |
+| Tool Use | **BFCL V2** | — | Accuracy |
+| Tool Use | **Nexus** | — | Accuracy |
+| Math | **GSM8K** | 8-shot, CoT | Exact match |
+| Math | **MATH** | 0-shot, CoT | Exact match |
+| Reasoning | **ARC-Challenge** | 0-shot | Accuracy |
+| Reasoning | **GPQA** | 0-shot | Accuracy |
+| Reasoning | **HellaSwag** | 0-shot | Accuracy |
+| Long Context | **InfiniteBench/En.MC** | 128k | Accuracy |
+| Long Context | **InfiniteBench/En.QA** | 128k | Accuracy |
+| Long Context | **NIH/Multi-needle** | — | Accuracy |
+| Multilingual | **MGSM** | 0-shot, CoT | Exact match |
+
+### Vision Benchmarks (Instruction Tuned)
+
+| Category | Benchmark | Setup | Metric |
+|----------|-----------|-------|--------|
+| College-level | **MMMU** | 0-shot CoT, micro avg accuracy | Accuracy |
+| College-level | **MMMU-Pro, Standard** | 10-opts, text | Accuracy |
+| College-level | **MMMU-Pro, Vision** | text | Accuracy |
+| Math | **MathVista** | testmini | Accuracy |
+| Charts & Diagrams | **ChartQA** | 0-shot CoT, relaxed accuracy | Accuracy |
+| Charts & Diagrams | **AI2 Diagram** | test | Accuracy |
+| Document | **DocVQA** | ANLS | ANLS |
+| Visual QA | **VQAv2** | test | Accuracy |
 
 ### Efficiency Metrics
 - **Latency** - Time per token (ms/token)
@@ -45,23 +72,61 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 - **Memory Usage** - Peak RAM consumption
 - **Quantization Impact** - FP16 vs INT4 vs INT2 performance
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### Option A: Google Colab (Recommended)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/llama-3.2-comparison/blob/main/notebooks/colab_setup.ipynb)
 
-1. Open the Colab setup notebook
-2. Run all cells to clone repo and install dependencies  
-3. Start benchmarking with free GPU access
+> **Note:** This repo is private. The Colab badge won't work directly. To open the notebook:
+> 1. Go to [colab.research.google.com](https://colab.research.google.com)
+> 2. Click **File → Open notebook → GitHub**
+> 3. Sign in with your GitHub account and select this repo
+> 4. Pick `notebooks/colab_setup.ipynb`
+
+1. Open the notebook using the steps above
+2. Go to **Runtime → Change runtime type → T4 GPU**
+3. Run the setup cells to clone the repo and install dependencies:
+   ```python
+   !git clone https://github.com/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models.git
+   %cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
+   !pip install -r requirements-colab.txt
+   ```
+4. Download models (requires [Hugging Face token](https://huggingface.co/settings/tokens) for gated models like LLaMA):
+   ```python
+   !huggingface-cli login --token YOUR_TOKEN
+   !python scripts/download_models.py
+   ```
+5. Run a smoke test to verify everything works:
+   ```python
+   !python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
+   ```
+6. Run benchmarks:
+   ```python
+   # Single model + benchmark
+   !python -m benchmarks.runner --model llama-3.2-1b --quant int4 --benchmark mmlu
+
+   # All text benchmarks for one model
+   !python -m benchmarks.runner --model llama-3.2-1b --quant fp16
+
+   # Vision benchmarks (requires vision model)
+   !python -m benchmarks.runner --model llama-3.2-11b-vision --quant fp16 --benchmark mmmu --vision
+
+   # Full matrix
+   !python -m benchmarks.runner --all
+   ```
 
 ### Option B: Local Setup
 ```bash
-git clone https://github.com/yourusername/llama-3.2-comparison.git
-cd llama-3.2-comparison
+git clone https://github.com/PedroPovedaQ/LLaMA-3.2-Lightweight-Text-and-Multimodal-Models.git
+cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
 python scripts/setup.py
 pip install -r requirements.txt
+huggingface-cli login
 python scripts/download_models.py
+
+# Smoke test
+python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
 ```
+> **Note:** Local setup requires a CUDA GPU for quantized inference (INT8/INT4). FP16 can run on CPU but will be slow.
 
 ### Model Source Options
 
@@ -180,6 +245,16 @@ This writes `results/reports/project_snapshot_report.pdf` using the latest match
 - [Phi-3 Technical Report](https://arxiv.org/abs/2404.14219)
 - [Efficient Model Deployment Best Practices](https://huggingface.co/docs/transformers/main/en/perf_infer_gpu_one)
 
+## 📅 Milestones (Target: April 13)
+
+| Milestone | Deadline | Deliverables |
+|-----------|----------|--------------|
+| **M1** — Environment & Setup | Mar 28 | `pip install`, download models, confirm GPU access (Colab or local) |
+| **M2** — Benchmark Runner + Quantization | Apr 2 | Finalize eval scripts (15 text + 8 vision), quantization wrapper (FP16/INT8/INT4), smoke test on TinyLlama |
+| **M3** — Full Experiment Matrix | Apr 6 | Run all model × quant × benchmark combos, collect latency/memory, commit raw results |
+| **M4** — Analysis & Visualization | Apr 9 | Pareto frontier plot, comparison tables, charts, statistical significance tests |
+| **M5** — Presentation & Report | Apr 13 | Slides finalized, NeurIPS report draft, Colab demo ready |
+
 ## 📋 Progress
 
 - [x] Repository setup and documentation
@@ -187,10 +262,16 @@ This writes `results/reports/project_snapshot_report.pdf` using the latest match
 - [x] Colab integration
 - [x] Baseline benchmark implementation (HellaSwag, ARC, GSM8K)
 - [x] Baseline efficiency pipeline (TTFT, latency/token, throughput, memory)
+- [x] Benchmark framework scaffold (15 text + 8 vision)
+- [x] Quantization wrapper (FP16 / INT8 / INT4 via bitsandbytes)
+- [ ] Finalize benchmark implementations
+- [ ] Latency & memory profiling
+- [ ] Full experiment matrix
 - [ ] Results analysis and visualization
 - [ ] Pareto frontier analysis
+- [ ] Final presentation and NeurIPS report
 
 ---
 
-**Course**: CAP6614 - Efficient Machine Learning  
+**Course**: CAP6614 - Efficient Machine Learning
 **Focus**: On-device deployment and edge computing optimization
