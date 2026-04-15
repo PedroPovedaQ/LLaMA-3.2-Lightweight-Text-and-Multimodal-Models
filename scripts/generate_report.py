@@ -107,14 +107,21 @@ def get_latest_efficiency(model_id: str) -> Optional[Tuple[str, Dict[str, object
 
 def benchmark_summary(data: Dict[str, object]) -> Dict[str, float]:
     by_name = {b["name"]: b for b in data.get("benchmarks", [])}
+    per_benchmark_acc = [
+        float(by_name["hellaswag"]["accuracy"]),
+        float(by_name["arc"]["accuracy"]),
+        float(by_name["gsm8k"]["accuracy"]),
+    ]
     total_correct = sum(float(b["correct"]) for b in by_name.values())
     total_examples = sum(float(b["num_examples"]) for b in by_name.values())
     total_duration = sum(float(b["duration_sec"]) for b in by_name.values())
     return {
-        "hellaswag_acc": float(by_name["hellaswag"]["accuracy"]),
-        "arc_acc": float(by_name["arc"]["accuracy"]),
-        "gsm8k_acc": float(by_name["gsm8k"]["accuracy"]),
-        "overall_acc": total_correct / total_examples if total_examples else 0.0,
+        "hellaswag_acc": per_benchmark_acc[0],
+        "arc_acc": per_benchmark_acc[1],
+        "gsm8k_acc": per_benchmark_acc[2],
+        # Overall ranking in this report uses macro-average across benchmarks.
+        "overall_acc": sum(per_benchmark_acc) / len(per_benchmark_acc),
+        "overall_acc_micro": total_correct / total_examples if total_examples else 0.0,
         "total_duration": total_duration,
     }
 

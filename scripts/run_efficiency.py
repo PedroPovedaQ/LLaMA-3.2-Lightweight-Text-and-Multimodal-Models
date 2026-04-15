@@ -179,6 +179,8 @@ def main() -> None:
 
     run_id = make_run_id("efficiency")
     started_at = datetime.now(timezone.utc)
+    effective_warmup_runs = max(args.warmup_runs, 0)
+    effective_timed_runs = max(args.timed_runs, 1)
 
     per_prompt = []
     ttft_ms_all = []
@@ -188,7 +190,7 @@ def main() -> None:
     for idx, prompt in enumerate(prompts):
         print(f"[efficiency] Prompt {idx + 1}/{len(prompts)}")
 
-        for _ in range(max(args.warmup_runs, 0)):
+        for _ in range(effective_warmup_runs):
             _ = timed_generate(
                 model,
                 tokenizer,
@@ -201,7 +203,7 @@ def main() -> None:
         latency_ms_per_token = []
         throughput_tok_s = []
 
-        for _ in range(max(args.timed_runs, 1)):
+        for _ in range(effective_timed_runs):
             ttft = timed_generate(model, tokenizer, runtime, prompt, max_new_tokens=1)
             ttft_ms_value = ttft["elapsed_sec"] * 1000.0
             ttft_ms.append(ttft_ms_value)
@@ -247,8 +249,8 @@ def main() -> None:
         "runtime": asdict(runtime),
         "config": {
             "num_prompts": len(prompts),
-            "warmup_runs": args.warmup_runs,
-            "timed_runs": args.timed_runs,
+            "warmup_runs": effective_warmup_runs,
+            "timed_runs": effective_timed_runs,
             "max_new_tokens": args.max_new_tokens,
             "decoding": {
                 "temperature": 0.0,
