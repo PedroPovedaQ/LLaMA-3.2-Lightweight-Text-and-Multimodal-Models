@@ -5,13 +5,11 @@ from __future__ import annotations
 
 import argparse
 import random
-import re
 import time
 from dataclasses import asdict
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, List, Optional
 
 try:
     import torch
@@ -19,13 +17,18 @@ except Exception:  # pragma: no cover - optional dependency at runtime
     torch = None
 
 from experiment_utils import (
+    LETTERS,
     RAW_RESULTS_DIR,
     capture_hardware_info,
     ensure_results_dirs,
+    extract_last_number,
     format_user_prompt,
     load_model_and_tokenizer,
     make_run_id,
     model_input_device,
+    normalize_numeric,
+    parse_mc_answer,
+    safe_take,
     save_json,
 )
 
@@ -37,9 +40,6 @@ MODEL_KEYS = {
     "tinyllama": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
     "qwen2-1.5b": "Qwen/Qwen2-1.5B-Instruct",
 }
-
-LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run baseline benchmark evaluations")
@@ -93,12 +93,6 @@ def resolve_model_id(args: argparse.Namespace) -> str:
     return MODEL_KEYS[args.model_key]
 
 
-def safe_take(dataset: Iterable[dict], limit: int) -> List[dict]:
-    if limit <= 0:
-        return []
-    return [dataset[i] for i in range(min(limit, len(dataset)))]
-
-
 def generate_completion(
     model,
     tokenizer,
@@ -126,52 +120,6 @@ def generate_completion(
 
     generated = output[0][encoded["input_ids"].shape[1] :]
     return tokenizer.decode(generated, skip_special_tokens=True).strip()
-
-
-def parse_mc_answer(text: str, choices: List[str]) -> Optional[str]:
-    cleaned = text.strip()
-    if not cleaned:
-        return None
-
-    # Priority 1: direct single-letter prediction.
-    letter_matches = re.findall(r"\b([A-Z])\b", cleaned.upper())
-    for candidate in letter_matches:
-        if candidate in LETTERS[: len(choices)]:
-            return candidate
-
-    # Priority 2: text overlap with one option.
-    lowered = cleaned.lower()
-    matched = []
-    for idx, choice in enumerate(choices):
-        choice_text = choice.strip().lower()
-        if choice_text and choice_text in lowered:
-            matched.append(LETTERS[idx])
-
-    if len(matched) == 1:
-        return matched[0]
-    return None
-
-
-def normalize_numeric(value: str) -> Optional[str]:
-    raw = value.strip().replace(",", "")
-    if not raw:
-        return None
-
-    try:
-        dec = Decimal(raw)
-    except InvalidOperation:
-        return None
-
-    if dec == dec.to_integral_value():
-        return str(dec.quantize(Decimal("1")))
-    return format(dec.normalize(), "f").rstrip("0").rstrip(".")
-
-
-def extract_last_number(text: str) -> Optional[str]:
-    matches = re.findall(r"-?\d+(?:,\d{3})*(?:\.\d+)?", text)
-    if not matches:
-        return None
-    return normalize_numeric(matches[-1])
 
 
 def evaluate_hellaswag(model, tokenizer, runtime, limit: int, save_predictions: bool) -> Dict[str, object]:

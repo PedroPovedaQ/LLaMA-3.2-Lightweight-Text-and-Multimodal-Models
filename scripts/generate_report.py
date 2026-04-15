@@ -85,7 +85,7 @@ def get_latest_efficiency(model_id: str) -> Optional[Tuple[str, Dict[str, object
             continue
         if config.get("num_prompts") != 5:
             continue
-        if config.get("timed_runs") != 2:
+        if config.get("timed_runs") != 3:
             continue
         if config.get("max_new_tokens") != 64:
             continue

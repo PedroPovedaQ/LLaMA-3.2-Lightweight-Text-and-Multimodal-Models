@@ -6,22 +6,25 @@ from __future__ import annotations
 import argparse
 import json
 import random
-import re
 import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, List, Optional
 
 from datasets import load_dataset
 
 from experiment_utils import (
+    LETTERS,
     RAW_RESULTS_DIR,
     capture_hardware_info,
     ensure_results_dirs,
+    extract_last_number,
     make_run_id,
+    normalize_numeric,
+    parse_mc_answer,
+    safe_take,
     save_json,
 )
 
@@ -31,9 +34,6 @@ MODEL_TAGS = {
     "phi-3-mini": "phi3:mini",
     "tinyllama": "tinyllama",
 }
-
-LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Ollama-backed benchmark evaluations")
@@ -95,12 +95,6 @@ def set_seed(seed: int) -> None:
     random.seed(seed)
 
 
-def safe_take(dataset: Iterable[dict], limit: int) -> List[dict]:
-    if limit <= 0:
-        return []
-    return [dataset[i] for i in range(min(limit, len(dataset)))]
-
-
 def _post_json(url: str, payload: Dict[str, object], timeout_sec: int) -> Dict[str, object]:
     body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
@@ -145,50 +139,6 @@ def ollama_generate(
     }
     response = _post_json(url, payload, timeout_sec)
     return str(response.get("response", "")).strip()
-
-
-def parse_mc_answer(text: str, choices: List[str]) -> Optional[str]:
-    cleaned = text.strip()
-    if not cleaned:
-        return None
-
-    letter_matches = re.findall(r"\b([A-Z])\b", cleaned.upper())
-    for candidate in letter_matches:
-        if candidate in LETTERS[: len(choices)]:
-            return candidate
-
-    lowered = cleaned.lower()
-    matched = []
-    for idx, choice in enumerate(choices):
-        choice_text = choice.strip().lower()
-        if choice_text and choice_text in lowered:
-            matched.append(LETTERS[idx])
-
-    if len(matched) == 1:
-        return matched[0]
-    return None
-
-
-def normalize_numeric(value: str) -> Optional[str]:
-    raw = value.strip().replace(",", "")
-    if not raw:
-        return None
-
-    try:
-        dec = Decimal(raw)
-    except InvalidOperation:
-        return None
-
-    if dec == dec.to_integral_value():
-        return str(dec.quantize(Decimal("1")))
-    return format(dec.normalize(), "f").rstrip("0").rstrip(".")
-
-
-def extract_last_number(text: str) -> Optional[str]:
-    matches = re.findall(r"-?\d+(?:,\d{3})*(?:\.\d+)?", text)
-    if not matches:
-        return None
-    return normalize_numeric(matches[-1])
 
 
 def evaluate_hellaswag(

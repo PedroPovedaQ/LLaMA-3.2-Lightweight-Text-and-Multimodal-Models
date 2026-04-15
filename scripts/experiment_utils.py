@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import json
-import os
 import platform
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 try:
     import psutil
@@ -48,10 +49,6 @@ class RuntimeConfig:
     cache_dir: Optional[str]
 
 
-def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
 def make_run_id(prefix: str) -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     suffix = uuid.uuid4().hex[:8]
@@ -61,6 +58,61 @@ def make_run_id(prefix: str) -> str:
 def ensure_results_dirs() -> None:
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+def safe_take(dataset: Iterable[dict], limit: int) -> List[dict]:
+    if limit <= 0:
+        return []
+    return [dataset[i] for i in range(min(limit, len(dataset)))]
+
+
+def parse_mc_answer(text: str, choices: List[str]) -> Optional[str]:
+    cleaned = text.strip()
+    if not cleaned:
+        return None
+
+    # Priority 1: direct single-letter prediction.
+    letter_matches = re.findall(r"\b([A-Z])\b", cleaned.upper())
+    for candidate in letter_matches:
+        if candidate in LETTERS[: len(choices)]:
+            return candidate
+
+    # Priority 2: text overlap with one option.
+    lowered = cleaned.lower()
+    matched = []
+    for idx, choice in enumerate(choices):
+        choice_text = choice.strip().lower()
+        if choice_text and choice_text in lowered:
+            matched.append(LETTERS[idx])
+
+    if len(matched) == 1:
+        return matched[0]
+    return None
+
+
+def normalize_numeric(value: str) -> Optional[str]:
+    raw = value.strip().replace(",", "")
+    if not raw:
+        return None
+
+    try:
+        dec = Decimal(raw)
+    except InvalidOperation:
+        return None
+
+    if dec == dec.to_integral_value():
+        return str(dec.quantize(Decimal("1")))
+    return format(dec.normalize(), "f").rstrip("0").rstrip(".")
+
+
+def extract_last_number(text: str) -> Optional[str]:
+    matches = re.findall(r"-?\d+(?:,\d{3})*(?:\.\d+)?", text)
+    if not matches:
+        return None
+    return normalize_numeric(matches[-1])
 
 
 def resolve_device(device: str) -> str:
@@ -94,10 +146,10 @@ def _build_model_load_kwargs(precision: str, device: str) -> Dict[str, object]:
 
     if precision == "fp16":
         if device in {"cuda", "mps"}:
-            kwargs["dtype"] = torch.float16
+            kwargs["torch_dtype"] = torch.float16
     elif precision == "bf16":
         if device == "cuda":
-            kwargs["dtype"] = torch.bfloat16
+            kwargs["torch_dtype"] = torch.bfloat16
         else:
             raise ValueError("bf16 is only supported with CUDA in this baseline pipeline")
     elif precision == "int4":
@@ -253,10 +305,3 @@ def csv_safe(value: object) -> str:
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=True)
     return str(value)
-
-
-def env_flag(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.lower() in {"1", "true", "yes", "on"}

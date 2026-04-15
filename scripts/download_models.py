@@ -110,7 +110,7 @@ def download_model_hf(model_name: str, model_path: str, cache_dir: Optional[str]
             model_name,
             cache_dir=cache_dir,
             trust_remote_code=True,
-            dtype="auto",
+            torch_dtype="auto",
         )
 
         os.makedirs(model_path, exist_ok=True)
