@@ -1,8 +1,16 @@
-# LLaMA 3.2 vs Small Model Comparison
+# LLaMA 3.2: Lightweight Text and Multimodal Models
 
 
 **Evaluating the accuracy-latency Pareto frontier for lightweight language models on consumer hardware**
 ### Team 9: Pedro Poveda |	Joel Gonzalez |	Jose Gabriel Gonzalez Nunez |	Matthew Horvath
+
+## Paper Information
+
+- **Title**: LLaMA 3.2: Lightweight Text and Multimodal Models
+- **Authors**: Meta AI
+- **Venue**: Meta Release, September 2024
+- **Description**: Releases 1B and 3B parameter language models that achieve strong performance for their size class, specifically designed for on-device deployment. The 3B model approaches the quality of the original LLaMA-2-7B while being more than 2x smaller. Also includes 11B and 90B vision-language models with efficient visual token processing.
+- **Project angle**: Benchmark LLaMA-3.2-1B and 3B against Phi-3-mini and other small models on standard benchmarks, deploy on consumer hardware with quantization (4-bit, 2-bit), and evaluate the accuracy-latency Pareto frontier for on-device use cases.
 
 ## 🎯 Project Overview
 
@@ -24,6 +32,8 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 | **TinyLlama** | 1.1B | Community ultra-small model |
 
 ## 🧪 Evaluation Framework
+
+See [docs/benchmarks.md](docs/benchmarks.md) for the full benchmark catalog (task keys, metrics, and source links).
 
 ### Text Benchmarks
 
@@ -62,7 +72,7 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 - **Latency** - Time per token (ms/token)
 - **Throughput** - Tokens per second
 - **Memory Usage** - Peak RAM consumption
-- **Quantization Impact** - FP16 vs INT8 vs INT4 performance
+- **Quantization Impact** - FP16 vs INT4 vs INT2 performance
 
 ## 🚀 Getting Started
 
@@ -82,10 +92,13 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
    %cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
    !pip install -r requirements-colab.txt
    ```
-4. Download models (requires [Hugging Face token](https://huggingface.co/settings/tokens) for gated models like LLaMA):
+4. Download models (default is `llama-cli` provider for LLaMA models):
    ```python
    !huggingface-cli login --token YOUR_TOKEN
    !python scripts/download_models.py
+
+   # Optional: pull Phi-3-mini too
+   !python scripts/download_models.py --provider hf --models phi-3-mini
    ```
 5. Run a smoke test to verify everything works:
    ```python
@@ -115,10 +128,59 @@ pip install -r requirements.txt
 huggingface-cli login
 python scripts/download_models.py
 
+# Optional: include Phi-3-mini for 3-way comparison
+python scripts/download_models.py --provider hf --models phi-3-mini
+
 # Smoke test
 python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
 ```
 > **Note:** Local setup requires a CUDA GPU for quantized inference (INT8/INT4). FP16 can run on CPU but will be slow.
+
+### Model Source Options
+
+```bash
+# Default path (llama-cli provider; downloads LLaMA 3.2 1B + 3B)
+python scripts/download_models.py
+
+# Add Phi-3-mini (HF provider)
+python scripts/download_models.py --provider hf --models phi-3-mini
+
+# Official Hugging Face checkpoints (all core models)
+python scripts/download_models.py --provider hf --models llama-3.2-1b llama-3.2-3b phi-3-mini
+
+# Ollama mirror pull path (easy team onboarding, no HF gate required)
+python scripts/download_models.py --provider ollama --models llama-3.2-1b llama-3.2-3b phi-3-mini
+
+# Meta Llama CLI path (downloads with llama-model)
+python scripts/download_models.py --provider llama-cli --models llama-3.2-1b llama-3.2-3b --llama-source huggingface
+
+# Meta signed URL path (no Hugging Face dependency for model download)
+python scripts/download_models.py --provider llama-cli --models llama-3.2-1b --llama-source meta --meta-url 'https://...llamameta.net/*?...'
+```
+
+Llama CLI usage skill:
+- `skills/llama-cli/SKILL.md`
+
+Notes:
+- `llama-cli` downloads may produce original `.pth` checkpoints; the current Transformers benchmark scripts require HF-formatted weights (`model.safetensors` / `pytorch_model.bin`).
+- Existing benchmark reruns in this repo were executed with HF-backed model loading (`scripts/run_benchmarks.py`) and Ollama for no-gate path (`scripts/run_benchmarks_ollama.py`).
+
+## 🔌 Extending Entry Points
+
+To add a new model key:
+1. Add one entry to `MODEL_SPECS` in `scripts/experiment_utils.py`.
+2. The new key will automatically appear in:
+   - `scripts/run_benchmarks.py --model-key ...`
+   - `scripts/run_efficiency.py --model-key ...`
+   - `scripts/download_models.py --models ...` (when using model keys)
+   - `scripts/run_benchmarks_ollama.py --model-key ...` if `ollama_tag` is set
+
+To add a new benchmark:
+1. Add an evaluator function to `scripts/benchmark_eval.py`.
+2. Register it in `BENCHMARK_EVALUATORS` in the same file.
+3. It will automatically appear in:
+   - `scripts/run_benchmarks.py --benchmarks ...`
+   - `scripts/run_benchmarks_ollama.py --benchmarks ...`
 
 ## 📁 Repository Structure
 
@@ -152,8 +214,75 @@ We anticipate finding clear trade-offs in the accuracy-latency space:
 
 ### Quantization Support
 - **FP16**: Baseline half-precision
-- **INT8**: 8-bit quantization via bitsandbytes
-- **INT4**: 4-bit quantization for extreme efficiency
+- **INT4**: 4-bit quantization for strong efficiency gains
+- **INT2**: 2-bit quantization for maximum compression
+
+## 🏃 Experiment Pipeline
+
+Use these scripts for a reproducible baseline workflow.
+
+### 1. Run Accuracy Benchmarks
+
+```bash
+python scripts/run_benchmarks.py \
+  --model-key llama-3.2-1b \
+  --benchmarks hellaswag arc gsm8k \
+  --limit 100 \
+  --precision fp16 \
+  --device auto
+```
+
+No-HF-gate (local Ollama) benchmark path:
+
+```bash
+python scripts/run_benchmarks_ollama.py \
+  --model-key llama-3.2-1b \
+  --benchmarks hellaswag arc gsm8k \
+  --limit 20
+```
+
+Notes:
+- Raw output is saved to `results/raw/benchmark_<run_id>.json`
+- Start with low `--limit` (for example, `20`) to validate the pipeline before full runs
+- `int4` is supported in this baseline via bitsandbytes on CUDA
+- `int2` is not supported in this transformers baseline (use GGUF/llama.cpp path for 2-bit runs)
+
+### 2. Run Efficiency Measurements
+
+```bash
+python scripts/run_efficiency.py \
+  --model-key llama-3.2-1b \
+  --precision fp16 \
+  --device auto \
+  --num-prompts 5 \
+  --warmup-runs 2 \
+  --timed-runs 3 \
+  --max-new-tokens 64
+```
+
+Notes:
+- Raw output is saved to `results/raw/efficiency_<run_id>.json`
+- Metrics include TTFT, latency/token, throughput, and memory
+
+### 3. Aggregate Raw Results to CSV
+
+```bash
+python scripts/aggregate_results.py
+```
+
+This writes normalized metrics to `results/processed/metrics.csv` for plotting and Pareto analysis, and now also regenerates the PDF report by default.
+Use `--skip-report` to disable report generation.
+
+### 4. Generate PDF Snapshot Report
+
+```bash
+python scripts/generate_report.py
+```
+
+This writes `results/reports/project_snapshot_report.pdf` using the latest matching benchmark and efficiency runs for:
+- LLaMA-3.2-1B
+- LLaMA-3.2-3B
+- Phi-3-mini
 
 ## 📖 References
 
@@ -176,6 +305,8 @@ We anticipate finding clear trade-offs in the accuracy-latency space:
 - [x] Repository setup and documentation
 - [x] Model download automation
 - [x] Colab integration
+- [x] Baseline benchmark implementation (HellaSwag, ARC, GSM8K)
+- [x] Baseline efficiency pipeline (TTFT, latency/token, throughput, memory)
 - [x] Benchmark framework scaffold (15 text + 8 vision)
 - [x] Quantization wrapper (FP16 / INT8 / INT4 via bitsandbytes)
 - [ ] Finalize benchmark implementations
