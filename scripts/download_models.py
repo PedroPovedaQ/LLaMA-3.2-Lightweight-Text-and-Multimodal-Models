@@ -107,6 +107,37 @@ def default_models_for_provider(provider: str) -> list[str]:
     return ["llama-3.2-1b", "llama-3.2-3b", "phi-3-mini"]
 
 
+def _should_retry_with_remote_code(exc: Exception) -> bool:
+    message = str(exc).lower()
+    retry_markers = [
+        "trust_remote_code",
+        "requires you to execute the configuration file",
+        "requires you to execute the modeling file",
+        "custom code",
+        "remote code",
+    ]
+    return any(marker in message for marker in retry_markers)
+
+
+def _from_pretrained_with_fallback(factory, model_name: str, cache_dir: Optional[str], **kwargs):
+    try:
+        return factory.from_pretrained(
+            model_name,
+            cache_dir=cache_dir,
+            trust_remote_code=False,
+            **kwargs,
+        )
+    except Exception as exc:
+        if not _should_retry_with_remote_code(exc):
+            raise
+        return factory.from_pretrained(
+            model_name,
+            cache_dir=cache_dir,
+            trust_remote_code=True,
+            **kwargs,
+        )
+
+
 def download_model_hf(model_name: str, model_path: str, cache_dir: Optional[str] = None) -> bool:
     """Download a model from Hugging Face and save locally."""
     try:
@@ -114,16 +145,16 @@ def download_model_hf(model_name: str, model_path: str, cache_dir: Optional[str]
 
         print(f"📥 Downloading from Hugging Face: {model_name}...")
 
-        tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer = _from_pretrained_with_fallback(
+            AutoTokenizer,
             model_name,
-            cache_dir=cache_dir,
-            trust_remote_code=True,
+            cache_dir,
         )
 
-        model = AutoModelForCausalLM.from_pretrained(
+        model = _from_pretrained_with_fallback(
+            AutoModelForCausalLM,
             model_name,
-            cache_dir=cache_dir,
-            trust_remote_code=True,
+            cache_dir,
             torch_dtype="auto",
         )
 
