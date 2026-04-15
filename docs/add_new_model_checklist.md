@@ -73,7 +73,7 @@ Edit `scripts/generate_report.py`:
 
 Without this step, the model still benchmarks correctly, but it will not appear on the current fixed 3-model PDF pages.
 
-## 9) Verification checklist
+## 8) Verification checklist
 
 - [ ] `python scripts/download_models.py --help` shows your model key under `--models`.
 - [ ] `python scripts/run_benchmarks.py --help` shows your model key under `--model-key`.
