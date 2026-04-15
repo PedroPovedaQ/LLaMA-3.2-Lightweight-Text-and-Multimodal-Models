@@ -33,6 +33,8 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
 
 ## 🧪 Evaluation Framework
 
+See [docs/benchmarks.md](docs/benchmarks.md) for the full benchmark catalog (task keys, metrics, and source links).
+
 ### Text Benchmarks
 
 | Category | Benchmark | Setup | Metric |
@@ -90,10 +92,13 @@ This project benchmarks LLaMA 3.2's lightweight models (1B & 3B parameters) agai
    %cd LLaMA-3.2-Lightweight-Text-and-Multimodal-Models
    !pip install -r requirements-colab.txt
    ```
-4. Download models (requires [Hugging Face token](https://huggingface.co/settings/tokens) for gated models like LLaMA):
+4. Download models (default is `llama-cli` provider for LLaMA models):
    ```python
    !huggingface-cli login --token YOUR_TOKEN
    !python scripts/download_models.py
+
+   # Optional: pull Phi-3-mini too
+   !python scripts/download_models.py --provider hf --models phi-3-mini
    ```
 5. Run a smoke test to verify everything works:
    ```python
@@ -123,6 +128,9 @@ pip install -r requirements.txt
 huggingface-cli login
 python scripts/download_models.py
 
+# Optional: include Phi-3-mini for 3-way comparison
+python scripts/download_models.py --provider hf --models phi-3-mini
+
 # Smoke test
 python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
 ```
@@ -131,12 +139,31 @@ python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
 ### Model Source Options
 
 ```bash
-# Official Hugging Face checkpoints (requires access for Meta Llama models)
+# Default path (llama-cli provider; downloads LLaMA 3.2 1B + 3B)
+python scripts/download_models.py
+
+# Add Phi-3-mini (HF provider)
+python scripts/download_models.py --provider hf --models phi-3-mini
+
+# Official Hugging Face checkpoints (all core models)
 python scripts/download_models.py --provider hf --models llama-3.2-1b llama-3.2-3b phi-3-mini
 
 # Ollama mirror pull path (easy team onboarding, no HF gate required)
 python scripts/download_models.py --provider ollama --models llama-3.2-1b llama-3.2-3b phi-3-mini
+
+# Meta Llama CLI path (downloads with llama-model)
+python scripts/download_models.py --provider llama-cli --models llama-3.2-1b llama-3.2-3b --llama-source huggingface
+
+# Meta signed URL path (no Hugging Face dependency for model download)
+python scripts/download_models.py --provider llama-cli --models llama-3.2-1b --llama-source meta --meta-url 'https://...llamameta.net/*?...'
 ```
+
+Llama CLI usage skill:
+- `skills/llama-cli/SKILL.md`
+
+Notes:
+- `llama-cli` downloads may produce original `.pth` checkpoints; the current Transformers benchmark scripts require HF-formatted weights (`model.safetensors` / `pytorch_model.bin`).
+- Existing benchmark reruns in this repo were executed with HF-backed model loading (`scripts/run_benchmarks.py`) and Ollama for no-gate path (`scripts/run_benchmarks_ollama.py`).
 
 ## 📁 Repository Structure
 

@@ -289,6 +289,25 @@ def load_model_and_tokenizer(
         cache_dir=cache_dir,
     )
 
+    candidate_dir = Path(runtime.model_id).expanduser()
+    if candidate_dir.exists() and candidate_dir.is_dir():
+        has_hf_weights = any(
+            [
+                (candidate_dir / "model.safetensors").exists(),
+                (candidate_dir / "pytorch_model.bin").exists(),
+                (candidate_dir / "model.safetensors.index.json").exists(),
+                any(candidate_dir.glob("*.safetensors")),
+            ]
+        )
+        has_llama_original = (candidate_dir / "original" / "consolidated.00.pth").exists()
+        if has_llama_original and not has_hf_weights:
+            raise ValueError(
+                "Detected llama-model original checkpoint format at "
+                f"'{candidate_dir}'. This benchmark runner uses Transformers "
+                "and requires HF-formatted weights (model.safetensors or pytorch_model.bin). "
+                "Use --provider hf for benchmark-ready checkpoints, or use the Ollama benchmark path."
+            )
+
     tokenizer = _from_pretrained_with_fallback(
         AutoTokenizer,
         runtime.model_id,

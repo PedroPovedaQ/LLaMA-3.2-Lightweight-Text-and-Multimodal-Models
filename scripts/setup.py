@@ -168,8 +168,9 @@ def main():
     print("\n✅ Setup complete!")
     print("\nNext steps:")
     print("1. Install requirements: pip install -r requirements.txt")
-    print("2. Download models: python scripts/download_models.py")
-    print("3. Run benchmarks: python scripts/run_benchmarks.py")
+    print("2. Download LLaMA models (default llama-cli): python scripts/download_models.py")
+    print("3. Optional Phi-3-mini: python scripts/download_models.py --provider hf --models phi-3-mini")
+    print("4. Run benchmarks: python scripts/run_benchmarks.py")
 
 if __name__ == "__main__":
     main()
