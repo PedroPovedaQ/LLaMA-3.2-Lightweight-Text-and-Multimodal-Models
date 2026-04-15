@@ -6,7 +6,6 @@ This document lists the benchmarks used in this repository, what they measure, a
 
 These are the benchmarks executed by:
 - `scripts/run_benchmarks.py`
-- `scripts/run_benchmarks_ollama.py`
 
 | CLI key | Benchmark | What it measures | Metric in repo | Dataset/source link |
 |---|---|---|---|---|

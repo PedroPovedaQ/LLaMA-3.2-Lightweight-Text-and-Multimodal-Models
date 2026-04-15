@@ -106,6 +106,5 @@ Also note:
 
 If you need a benchmark-ready path immediately, use:
 - `python scripts/download_models.py --provider hf ...`
-- or `python scripts/download_models.py --provider ollama ...`
 
 while keeping benchmark commands unchanged.

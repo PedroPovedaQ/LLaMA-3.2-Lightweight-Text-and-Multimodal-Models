@@ -248,7 +248,7 @@ def run_benchmark(
     limit: int,
     save_predictions: bool,
 ) -> Dict[str, object]:
-    """Dispatch helper used by both HF and Ollama benchmark runners."""
+    """Dispatch helper used by benchmark runner scripts."""
     evaluator = BENCHMARK_EVALUATORS.get(name)
     if evaluator is None:
         valid = ", ".join(benchmark_names())

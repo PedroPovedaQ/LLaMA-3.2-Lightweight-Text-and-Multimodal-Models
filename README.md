@@ -148,9 +148,6 @@ python scripts/download_models.py --provider hf --models phi-3-mini
 # Official Hugging Face checkpoints (all core models)
 python scripts/download_models.py --provider hf --models llama-3.2-1b llama-3.2-3b phi-3-mini
 
-# Ollama mirror pull path (easy team onboarding, no HF gate required)
-python scripts/download_models.py --provider ollama --models llama-3.2-1b llama-3.2-3b phi-3-mini
-
 # Meta Llama CLI path (downloads with llama-model)
 python scripts/download_models.py --provider llama-cli --models llama-3.2-1b llama-3.2-3b --llama-source huggingface
 
@@ -163,7 +160,7 @@ Llama CLI usage skill:
 
 Notes:
 - `llama-cli` downloads may produce original `.pth` checkpoints; the current Transformers benchmark scripts require HF-formatted weights (`model.safetensors` / `pytorch_model.bin`).
-- Existing benchmark reruns in this repo were executed with HF-backed model loading (`scripts/run_benchmarks.py`) and Ollama for no-gate path (`scripts/run_benchmarks_ollama.py`).
+- Existing benchmark reruns in this repo were executed with HF-backed model loading (`scripts/run_benchmarks.py`).
 
 ## 🔌 Extending Entry Points
 
@@ -173,14 +170,12 @@ To add a new model key:
    - `scripts/run_benchmarks.py --model-key ...`
    - `scripts/run_efficiency.py --model-key ...`
    - `scripts/download_models.py --models ...` (when using model keys)
-   - `scripts/run_benchmarks_ollama.py --model-key ...` if `ollama_tag` is set
 
 To add a new benchmark:
 1. Add an evaluator function to `scripts/benchmark_eval.py`.
 2. Register it in `BENCHMARK_EVALUATORS` in the same file.
 3. It will automatically appear in:
    - `scripts/run_benchmarks.py --benchmarks ...`
-   - `scripts/run_benchmarks_ollama.py --benchmarks ...`
 
 ## 📁 Repository Structure
 
@@ -230,15 +225,6 @@ python scripts/run_benchmarks.py \
   --limit 100 \
   --precision fp16 \
   --device auto
-```
-
-No-HF-gate (local Ollama) benchmark path:
-
-```bash
-python scripts/run_benchmarks_ollama.py \
-  --model-key llama-3.2-1b \
-  --benchmarks hellaswag arc gsm8k \
-  --limit 20
 ```
 
 Notes:

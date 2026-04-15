@@ -35,9 +35,6 @@ python scripts/download_models.py --provider hf --models phi-3-mini
 # Or download all configured models
 python scripts/download_models.py --models all
 
-# Pull core models from Ollama (reliable mirror path, no HF gate needed)
-python scripts/download_models.py --provider ollama --models llama-3.2-1b llama-3.2-3b phi-3-mini
-
 # Download Llama checkpoints via Meta's llama-model CLI (HF-backed source)
 python scripts/download_models.py --provider llama-cli --models llama-3.2-1b llama-3.2-3b --llama-source huggingface
 
@@ -70,11 +67,6 @@ jupyter notebook notebooks/model_comparison.ipynb
 - **Hugging Face Login**: Some models require authentication
   ```bash
   hf auth login
-  ```
-
-- **Ollama Mirror Option**: install Ollama first if using `--provider ollama`
-  ```bash
-  ollama --version
   ```
 
 - **Llama CLI Option**: install `llama-model` first if using `--provider llama-cli`

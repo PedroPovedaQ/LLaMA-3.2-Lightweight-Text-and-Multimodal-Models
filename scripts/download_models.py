@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Model download/pull script for small model comparison project.
-Supports Hugging Face, Ollama, and Llama CLI providers.
+Supports Hugging Face and Llama CLI providers.
 """
 
 import argparse
@@ -31,26 +31,6 @@ def setup_huggingface() -> bool:
             return False
     except ImportError:
         print("⚠️  huggingface_hub not installed")
-        return False
-
-
-def ensure_ollama_available() -> bool:
-    """Verify ollama CLI exists."""
-    try:
-        proc = subprocess.run(
-            ["ollama", "--version"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        version = (proc.stdout or proc.stderr).strip()
-        print(f"✅ Ollama available: {version}")
-        return True
-    except FileNotFoundError:
-        print("❌ Ollama CLI not found. Install from: https://ollama.com/download")
-        return False
-    except subprocess.CalledProcessError as exc:
-        print(f"❌ Failed to run ollama CLI: {exc}")
         return False
 
 
@@ -90,7 +70,6 @@ def get_model_config() -> Dict[str, Dict[str, Optional[str]]]:
     return {
         key: {
             "hf_name": spec.hf_model_id,
-            "ollama_name": spec.ollama_tag,
             "llama_model_id": llama_cli_ids.get(key),
             "path": spec.download_path,
             "description": spec.description,
@@ -136,36 +115,6 @@ def download_model_hf(model_name: str, model_path: str, cache_dir: Optional[str]
 
     except Exception as exc:
         print(f"❌ Failed to download {model_name}: {exc}")
-        return False
-
-
-def pull_model_ollama(ollama_name: str, model_path: str, model_key: str) -> bool:
-    """Pull a model from Ollama and write a local manifest pointer."""
-    try:
-        print(f"📥 Pulling from Ollama: {ollama_name}...")
-        subprocess.run(["ollama", "pull", ollama_name], check=True)
-
-        os.makedirs(model_path, exist_ok=True)
-        manifest_path = Path(model_path) / "OLLAMA_MODEL.json"
-        with manifest_path.open("w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "model_key": model_key,
-                    "provider": "ollama",
-                    "ollama_name": ollama_name,
-                    "pulled_at_utc": datetime.now(timezone.utc).isoformat(),
-                    "note": "Model blob is stored in Ollama's local model store.",
-                },
-                f,
-                indent=2,
-                ensure_ascii=True,
-            )
-
-        print(f"✅ {ollama_name} pulled via Ollama")
-        print(f"📄 Wrote pointer manifest: {manifest_path}")
-        return True
-    except subprocess.CalledProcessError as exc:
-        print(f"❌ Failed to pull {ollama_name} via Ollama: {exc}")
         return False
 
 
@@ -241,9 +190,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Download/pull models for comparison")
     parser.add_argument(
         "--provider",
-        choices=["hf", "ollama", "llama-cli"],
+        choices=["hf", "llama-cli"],
         default="llama-cli",
-        help="Model provider: hf (Hugging Face), ollama, or llama-cli",
+        help="Model provider: hf (Hugging Face), or llama-cli",
     )
     parser.add_argument(
         "--models",
@@ -308,10 +257,6 @@ def main() -> None:
     if args.provider == "hf":
         print("🤗 Using Hugging Face provider...")
         setup_huggingface()
-    elif args.provider == "ollama":
-        print("🦙 Using Ollama provider...")
-        if not ensure_ollama_available():
-            raise SystemExit(1)
     else:
         print("🦙 Using Llama CLI provider...")
         if not ensure_llama_cli_available():
@@ -330,20 +275,11 @@ def main() -> None:
         if args.provider == "hf":
             if download_model_hf(config["hf_name"], config["path"], args.cache_dir):
                 success_count += 1
-        elif args.provider == "ollama":
-            if not config.get("ollama_name"):
-                print(
-                    f"⚠️  No Ollama mapping for {model_key}. "
-                    "Use --provider hf for this model."
-                )
-                continue
-            if pull_model_ollama(config["ollama_name"], config["path"], model_key):
-                success_count += 1
         else:
             if not config.get("llama_model_id"):
                 print(
                     f"⚠️  No llama-cli mapping for {model_key}. "
-                    "Use --provider hf or --provider ollama for this model."
+                    "Use --provider hf for this model."
                 )
                 continue
             if pull_model_llama_cli(
@@ -365,8 +301,6 @@ def main() -> None:
         print("1. Internet connection")
         if args.provider == "hf":
             print("2. Hugging Face authentication / gated model approval")
-        elif args.provider == "ollama":
-            print("2. Ollama installation and available model tags")
         else:
             print("2. llama-model CLI install/version and source credentials")
             print("3. If using --llama-source meta: signed URL validity")
