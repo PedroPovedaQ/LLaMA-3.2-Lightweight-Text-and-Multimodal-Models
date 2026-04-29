@@ -176,6 +176,7 @@ To add a new benchmark:
 2. Register it in `BENCHMARK_EVALUATORS` in the same file.
 3. It will automatically appear in:
    - `scripts/run_benchmarks.py --benchmarks ...`
+4. For the full workflow and reporting implications, see [docs/add_new_benchmark.md](docs/add_new_benchmark.md).
 
 ## 📁 Repository Structure
 
@@ -221,7 +222,7 @@ Use these scripts for a reproducible baseline workflow.
 ```bash
 python scripts/run_benchmarks.py \
   --model-key llama-3.2-1b \
-  --benchmarks hellaswag arc gsm8k \
+  --benchmarks hellaswag arc gpqa gsm8k \
   --limit 100 \
   --precision fp16 \
   --device auto
@@ -229,6 +230,7 @@ python scripts/run_benchmarks.py \
 
 Notes:
 - Raw output is saved to `results/raw/benchmark_<run_id>.json`
+- Visual artifacts are also saved by default to `results/reports/` as PNG charts plus a per-run PDF summary
 - Start with low `--limit` (for example, `20`) to validate the pipeline before full runs
 - `int4` is supported in this baseline via bitsandbytes on CUDA
 - `int2` is not supported in this transformers baseline (use GGUF/llama.cpp path for 2-bit runs)
@@ -291,7 +293,7 @@ This writes `results/reports/project_snapshot_report.pdf` using the latest match
 - [x] Repository setup and documentation
 - [x] Model download automation
 - [x] Colab integration
-- [x] Baseline benchmark implementation (HellaSwag, ARC, GSM8K)
+- [x] Baseline benchmark implementation (HellaSwag, ARC, GPQA, GSM8K)
 - [x] Baseline efficiency pipeline (TTFT, latency/token, throughput, memory)
 - [x] Benchmark framework scaffold (15 text + 8 vision)
 - [x] Quantization wrapper (FP16 / INT8 / INT4 via bitsandbytes)

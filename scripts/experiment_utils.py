@@ -38,6 +38,7 @@ except Exception:  # pragma: no cover - optional dependency at runtime
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_RESULTS_DIR = PROJECT_ROOT / "results" / "raw"
 PROCESSED_RESULTS_DIR = PROJECT_ROOT / "results" / "processed"
+REPORTS_DIR = PROJECT_ROOT / "results" / "reports"
 
 
 @dataclass(frozen=True)
@@ -112,6 +113,7 @@ def make_run_id(prefix: str) -> str:
 def ensure_results_dirs() -> None:
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

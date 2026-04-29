@@ -20,6 +20,7 @@ from benchmark_eval import benchmark_names, run_benchmark
 from experiment_utils import (
     MODEL_KEYS,
     RAW_RESULTS_DIR,
+    REPORTS_DIR,
     capture_hardware_info,
     ensure_results_dirs,
     format_user_prompt,
@@ -29,6 +30,7 @@ from experiment_utils import (
     resolve_model_id,
     save_json,
 )
+from generate_benchmark_report import generate_benchmark_report
 
 def parse_args() -> argparse.Namespace:
     available_benchmarks = benchmark_names()
@@ -64,6 +66,11 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="Optional explicit output path for raw benchmark JSON",
+    )
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="Skip PNG/PDF report generation for this benchmark run",
     )
     return parser.parse_args()
 
@@ -162,6 +169,13 @@ def main() -> None:
 
     save_json(summary, output_path)
     print(f"[benchmark] Saved results to: {output_path}")
+
+    if not args.no_report:
+        output_prefix = REPORTS_DIR / run_id
+        artifacts = generate_benchmark_report(summary, output_prefix)
+        print(f"[benchmark] Saved accuracy chart to: {artifacts['accuracy_png']}")
+        print(f"[benchmark] Saved runtime chart to: {artifacts['runtime_png']}")
+        print(f"[benchmark] Saved PDF report to: {artifacts['report_pdf']}")
 
     for item in benchmark_results:
         print(
