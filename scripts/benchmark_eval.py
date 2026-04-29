@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import time
+import random
 from typing import Callable, Dict, List, Optional
 
 from experiment_utils import (
@@ -162,6 +163,84 @@ def evaluate_arc(
     return result
 
 
+def evaluate_gpqa(
+    generate_fn: GenerateFn,
+    limit: int,
+    save_predictions: bool,
+) -> Dict[str, object]:
+    try:
+        from datasets import load_dataset
+    except Exception as exc:
+        raise ImportError(
+            "datasets is required for benchmark runs. Install dependencies: pip install -r requirements.txt"
+        ) from exc
+
+    dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond", split="train")
+    items = safe_take(dataset, limit)
+
+    correct = 0
+    predictions = []
+    start = time.perf_counter()
+    for i, item in enumerate(items):
+        question = str(item["Question"]).strip()
+        choices = [
+            ("correct", str(item["Correct Answer"]).strip()),
+            ("incorrect_1", str(item["Incorrect Answer 1"]).strip()),
+            ("incorrect_2", str(item["Incorrect Answer 2"]).strip()),
+            ("incorrect_3", str(item["Incorrect Answer 3"]).strip()),
+        ]
+
+        # GPQA stores the correct answer separately; shuffle deterministically so
+        # the generated-answer path does not learn that "A" is always correct.
+        rng = random.Random(i)
+        rng.shuffle(choices)
+
+        options = [text for _, text in choices]
+        answer_letter = next(
+            LETTERS[idx] for idx, (label, _) in enumerate(choices) if label == "correct"
+        )
+        option_block = "\n".join(
+            f"{LETTERS[idx]}. {text}" for idx, text in enumerate(options)
+        )
+        prompt = (
+            "Answer the multiple-choice question.\n"
+            f"Question: {question}\n"
+            f"Options:\n{option_block}\n"
+            "Answer with a single letter only."
+        )
+
+        output = generate_fn(prompt, 8)
+        pred = parse_mc_answer(output, options)
+        is_correct = pred == answer_letter
+        correct += int(is_correct)
+
+        if save_predictions:
+            predictions.append(
+                {
+                    "index": i,
+                    "prediction": pred,
+                    "target": answer_letter,
+                    "correct": is_correct,
+                    "raw_output": output,
+                }
+            )
+
+    elapsed = time.perf_counter() - start
+    total = len(items)
+    accuracy = (correct / total) if total else 0.0
+    result: Dict[str, object] = {
+        "name": "gpqa",
+        "num_examples": total,
+        "correct": correct,
+        "accuracy": round(accuracy, 6),
+        "duration_sec": round(elapsed, 3),
+        "examples_per_sec": round(total / elapsed, 4) if elapsed > 0 else None,
+    }
+    if save_predictions:
+        result["predictions"] = predictions
+    return result
+
+
 def evaluate_gsm8k(
     generate_fn: GenerateFn,
     limit: int,
@@ -233,6 +312,7 @@ def evaluate_gsm8k(
 BENCHMARK_EVALUATORS: Dict[str, BenchmarkEvaluator] = {
     "hellaswag": evaluate_hellaswag,
     "arc": evaluate_arc,
+    "gpqa": evaluate_gpqa,
     "gsm8k": evaluate_gsm8k,
 }
 

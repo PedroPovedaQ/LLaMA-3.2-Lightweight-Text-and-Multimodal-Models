@@ -36,6 +36,8 @@ MODEL_COLORS = {
     "microsoft/Phi-3-mini-4k-instruct": "#E68613",  # orange (non-LLaMA)
 }
 
+BASELINE_BENCHMARKS = ("hellaswag", "arc", "gpqa", "gsm8k")
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate PDF project snapshot report")
@@ -70,8 +72,8 @@ def get_latest_benchmark(model_id: str) -> Optional[Tuple[str, Dict[str, object]
         bench_list = config.get("benchmarks")
         if (
             not isinstance(bench_list, list)
-            or len(bench_list) != 3
-            or frozenset(bench_list) != {"hellaswag", "arc", "gsm8k"}
+            or len(bench_list) != len(BASELINE_BENCHMARKS)
+            or frozenset(bench_list) != frozenset(BASELINE_BENCHMARKS)
         ):
             continue
         ts = datetime.fromisoformat(str(data.get("started_at_utc")))
@@ -122,20 +124,16 @@ def get_latest_efficiency(model_id: str) -> Optional[Tuple[str, Dict[str, object
 
 def benchmark_summary(data: Dict[str, object]) -> Dict[str, float]:
     by_name = {b["name"]: b for b in data.get("benchmarks", [])}
-    per_benchmark_acc = [
-        float(by_name["hellaswag"]["accuracy"]),
-        float(by_name["arc"]["accuracy"]),
-        float(by_name["gsm8k"]["accuracy"]),
-    ]
+    per_benchmark_acc = {
+        f"{name}_acc": float(by_name[name]["accuracy"]) for name in BASELINE_BENCHMARKS
+    }
     total_correct = sum(float(b["correct"]) for b in by_name.values())
     total_examples = sum(float(b["num_examples"]) for b in by_name.values())
     total_duration = sum(float(b["duration_sec"]) for b in by_name.values())
     return {
-        "hellaswag_acc": per_benchmark_acc[0],
-        "arc_acc": per_benchmark_acc[1],
-        "gsm8k_acc": per_benchmark_acc[2],
+        **per_benchmark_acc,
         # Overall ranking in this report uses macro-average across benchmarks.
-        "overall_acc": sum(per_benchmark_acc) / len(per_benchmark_acc),
+        "overall_acc": sum(per_benchmark_acc.values()) / len(per_benchmark_acc),
         "overall_acc_micro": total_correct / total_examples if total_examples else 0.0,
         "total_duration": total_duration,
     }
@@ -159,7 +157,7 @@ def add_title_page(pdf: PdfPages, bench_files: Dict[str, str], eff_files: Dict[s
         "LLaMA 3.2 Project Snapshot Report",
         "",
         "Scope:",
-        "- Benchmark comparison (HellaSwag, ARC, GSM8K)",
+        "- Benchmark comparison (HellaSwag, ARC, GPQA, GSM8K)",
         "- Efficiency comparison (TTFT, latency/token, throughput, RAM)",
         "",
         "Data Sources (latest matching runs):",
@@ -186,23 +184,28 @@ def add_accuracy_page(pdf: PdfPages, bench: Dict[str, Dict[str, float]]) -> None
     x = range(len(labels))
     colors = [MODEL_COLORS[m] for m in TARGET_MODELS]
 
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
+    fig, axes = plt.subplots(3, 2, figsize=(11, 8.5))
     fig.suptitle("Benchmark Accuracy and Runtime (fp16)")
 
     metrics = [
         ("hellaswag_acc", "HellaSwag Accuracy"),
         ("arc_acc", "ARC Accuracy"),
+        ("gpqa_acc", "GPQA Accuracy"),
         ("gsm8k_acc", "GSM8K Accuracy"),
         ("total_duration", "Total Benchmark Duration (sec)"),
     ]
 
-    for ax, (key, title) in zip(axes.flatten(), metrics):
+    flat_axes = axes.flatten()
+    for ax, (key, title) in zip(flat_axes, metrics):
         values = [bench[m][key] for m in TARGET_MODELS]
         ax.bar(labels, values, color=colors)
         ax.set_title(title)
         ax.tick_params(axis="x", rotation=20)
         for i, value in enumerate(values):
             ax.text(i, value, f"{value:.3f}", ha="center", va="bottom", fontsize=9)
+
+    for ax in flat_axes[len(metrics):]:
+        ax.axis("off")
 
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     pdf.savefig(fig)

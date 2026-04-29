@@ -29,7 +29,7 @@ python scripts/download_models.py --provider hf --models smollm2-1.7b
 ```bash
 python scripts/run_benchmarks.py \
   --model-key smollm2-1.7b \
-  --benchmarks hellaswag arc gsm8k \
+  --benchmarks hellaswag arc gpqa gsm8k \
   --limit 20 \
   --precision fp16 \
   --device mps
@@ -39,6 +39,7 @@ Notes:
 - Use `--device mps` on Apple Silicon.
 - Use `--device cuda` on NVIDIA GPUs.
 - Start with `--limit 20` for a smoke run, then scale up.
+- This command now also writes per-run benchmark charts and a PDF summary to `results/reports/` by default.
 
 ## 5) Run efficiency benchmarks
 
@@ -61,6 +62,7 @@ python scripts/aggregate_results.py
 
 Outputs:
 - Raw JSON: `results/raw/`
+- Per-run benchmark PNG/PDF artifacts: `results/reports/`
 - Aggregated CSV: `results/processed/metrics.csv`
 - PDF report: `results/reports/project_snapshot_report.pdf`
 
@@ -80,4 +82,3 @@ Without this step, the model still benchmarks correctly, but it will not appear 
 - [ ] `python scripts/run_efficiency.py --help` shows your model key under `--model-key`.
 - [ ] One benchmark JSON and one efficiency JSON exist for your model in `results/raw/`.
 - [ ] `results/processed/metrics.csv` contains rows for your model.
-

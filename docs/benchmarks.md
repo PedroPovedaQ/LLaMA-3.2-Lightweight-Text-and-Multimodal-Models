@@ -11,6 +11,7 @@ These are the benchmarks executed by:
 |---|---|---|---|---|
 | `hellaswag` | HellaSwag | Commonsense completion (multiple choice) | Accuracy | [Rowan/hellaswag](https://huggingface.co/datasets/Rowan/hellaswag) |
 | `arc` | ARC-Challenge | Grade-school science QA (multiple choice) | Accuracy | [ai2_arc (ARC-Challenge)](https://huggingface.co/datasets/ai2_arc) |
+| `gpqa` | GPQA | Graduate-level science reasoning (multiple choice) | Accuracy | [Idavidrein/gpqa](https://huggingface.co/datasets/Idavidrein/gpqa) |
 | `gsm8k` | GSM8K | Grade-school math word problems | Exact match (numeric final answer) | [gsm8k](https://huggingface.co/datasets/gsm8k) |
 
 ## 2) Full benchmark framework in `benchmarks/`
@@ -56,4 +57,4 @@ These are registered in:
 
 - Some task modules include `TODO` comments for dataset/task alignment (`open_rewrite`, `tldr9`, `nexus`, `ai2_diagram`, `nih_multi_needle`).
 - For strict paper replication, verify each task prompt format, split, and scoring against the original benchmark protocol before final reporting.
-- The PDF snapshot report currently uses the three-benchmark baseline set (`hellaswag`, `arc`, `gsm8k`).
+- The PDF snapshot report currently uses the four-benchmark baseline set (`hellaswag`, `arc`, `gpqa`, `gsm8k`).
