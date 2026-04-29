@@ -135,6 +135,8 @@ python scripts/download_models.py --provider hf --models phi-3-mini
 python -m benchmarks.runner --model tinyllama --quant fp16 --max-samples 10
 ```
 > **Note:** Local setup requires a CUDA GPU for quantized inference (INT8/INT4). FP16 can run on CPU but will be slow.
+>
+> For the Hugging Face-first local benchmark flow, see [docs/local_benchmark_quickstart.md](docs/local_benchmark_quickstart.md).
 
 ### Model Source Options
 
